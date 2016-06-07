@@ -1,4 +1,5 @@
-Kintun: Sistema de búsqueda de vulnerabilidades en redes.
+Kintun: Restful Vulnerability Scanner
+--------
 
 =============
 
@@ -115,4 +116,4 @@ License
 -------
 
 This application is under the GPL v3.0 license. See the complete license in the application:
-[LICENSE](https://github.com/CERTUNLP/NgenBundle/blob/master/Resources/meta/LICENSE)
+[LICENSE](https://github.com/CERTUNLP/Kintun/blob/master/LICENSE)
