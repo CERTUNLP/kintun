@@ -1,0 +1,2262 @@
+#!/usr/bin/env perl
+# vim: set nosta noet ts=4 sw=4:
+#
+# Copyright (c) 2006-2013, Mahlon E. Smith <mahlon@martini.nu>
+# All rights reserved.
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+#     * Redistributions of source code must retain the above copyright
+#       notice, this list of conditions and the following disclaimer.
+#
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#
+#     * Neither the name of Mahlon E. Smith nor the names of his
+#       contributors may be used to endorse or promote products derived
+#       from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND ANY
+# EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE REGENTS AND CONTRIBUTORS BE LIABLE FOR ANY
+# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+=head1 NAME
+
+Shelldap - A program for interacting with an LDAP server via a shell-like interface
+
+=head1 DESCRIPTION
+
+Shelldap /LDAP::Shell is a program for interacting with an LDAP server via a shell-like
+interface.
+
+This is not meant to be an exhaustive LDAP editing and browsing
+interface, but rather an intuitive shell for performing basic LDAP
+tasks quickly and with minimal effort.
+
+=head1 SYNPOSIS
+
+ shelldap --server example.net [--help]
+
+=head1 FEATURES
+
+ - Upon successful authenticated binding, credential information is
+   auto-cached to ~/.shelldap.rc -- future loads require no command line
+   flags.
+
+ - Custom 'description maps' for entry listings.  (See the 'list' command.)
+
+ - History and autocomplete via readline, if installed.
+
+ - Automatic reconnection attempts if the connection is lost with the
+   LDAP server.
+
+ - Basic schema introspection for quick reference.
+
+ - It feels like a semi-crippled shell, making LDAP browsing and editing
+   at least halfway pleasurable.
+
+=head1 OPTIONS
+
+All command line options follow getopts long conventions.
+
+    shelldap --server example.net --basedn dc=your,o=company
+
+You may also optionally create a ~/.shelldap.rc file with command line
+defaults.  This file should be valid YAML.  (This file is generated
+automatically on a successful bind auth.)
+
+Example:
+
+    server: ldap.example.net
+    binddn: cn=Manager,dc=your,o=company
+    bindpass: xxxxxxxxx
+    basedn: dc=your,o=company
+    tls: yes
+    tls_cacert: /etc/ssl/certs/cacert.pem
+    tls_cert:   ~/.ssl/client.cert.pem 
+    tls_key:    ~/.ssl/private/client.key.pem
+
+=over 4
+
+=item B<configfile>
+
+Optional.  Use an alternate configuration file, instead of the
+default ~/.shelldap.rc.
+
+    --configfile /tmp/alternate-config.yml
+    -f /tmp/alternate-config.yml
+
+This config file overrides values found in the default config, so
+you can easily have separate config files for connecting to your
+cn=monitor or cn=log overlays (for example.)
+
+=back
+
+=over 4
+
+=item B<server>
+
+Required. The LDAP server to connect to.  This can be a hostname, IP
+address, or a URI.
+
+    --server ldaps://ldap.example.net
+    -H ldaps://ldap.example.net
+
+=back
+
+=over 4
+
+=item B<binddn>
+
+The full dn of a user to authenticate as.  If not specified, defaults to
+an anonymous bind.  You will be prompted for a password.
+
+    --binddn cn=Manager,dc=your,o=company
+    -D cn=Manager,dc=your,o=company
+
+=back
+
+=over 4
+
+=item B<basedn>
+
+The directory 'root' of your LDAP server.  If omitted, shelldap will
+try and ask the server for a sane default.
+
+    --basedn dc=your,o=company
+    -b dc=your,o=company
+
+=back
+
+=over 4
+
+=item B<promptpass>
+
+Force password prompting.  Useful to temporarily override cached
+credentials.
+
+=back
+
+=over 4
+
+=item B<tls>
+
+Enables TLS over what would normally be an insecure connection.
+Requires server side support.
+
+=item B<tls_cacert>
+
+Specify CA Certificate to trust.
+
+    --tls_cacert /etc/ssl/certs/cacert.pem
+
+=item B<tls_cert>
+
+The TLS client certificate.
+
+    --tls_cert ~/.ssl/client.cert.pem
+
+=item B<tls_key>
+
+The TLS client key.  Not specifying a key will connect via TLS without
+key verification.
+
+    --tls_key ~/.ssl/private/client.key.pem
+
+=back
+
+=over 4
+
+=item B<cacheage>
+
+Set the time to cache directory lookups in seconds.
+
+By default, directory lookups are cached for 300 seconds, to speed
+autocomplete up when changing between different basedns.
+
+Modifications to the directory automatically reset the cache.  Directory
+listings are not cached.  (This is just used for autocomplete.)  Set it
+to 0 to disable caching completely.
+
+=back
+
+=over 4
+
+=item B<timeout>
+
+Set the maximum time an LDAP operation can take before it is cancelled.
+
+=back
+
+=over 4
+
+=item B<debug>
+
+Print extra operational info out, and backtrace on fatal error.
+
+=back
+
+=over 4
+
+=item B<version>
+
+Display the version number.
+
+=back
+
+=head1 SHELL COMMANDS
+
+=over 4
+
+=item B< cat>
+
+Display an LDIF dump of an entry.  Globbing is supported.  Specify
+either the full dn, or an rdn.  For most commands, rdns are local to the
+current search base. ('cwd', as translated to shell speak.)  You may additionally
+add a list of attributes to display.  Use '+' for server side attributes.
+
+    cat uid=mahlon
+    cat ou=*
+    cat uid=mahlon,ou=People,dc=example,o=company
+    cat uid=mahlon + userPassword
+
+=item B<  cd>
+
+Change directory.  Translated to LDAP, this changes the current basedn.
+All commands after a 'cd' operate within the new basedn.
+
+    cd                  change to 'home' basedn
+    cd ~                change to the binddn, or basedn if anonymously bound
+    cd -                change to previous node
+    cd ou=People        change to explicit path below current node
+    cd ..               change to parent node
+    cd ../../ou=Groups  change to node ou=Groups, which is a sibling
+                        to the current node's grandparent
+
+Since LDAP doesn't actually limit what can be a container object, you
+can actually cd into any entry. Many commands then work on '.', meaning
+"wherever I currently am."
+
+    cd uid=mahlon
+    cat .
+
+=item B<clear>
+
+Clear the screen.
+
+=item B<copy>
+
+Copy an entry to a different dn path.  All copies are relative to the
+current basedn, unless a full dn is specified.  All attributes are
+copied, then an LDAP moddn() is performed.
+
+    copy uid=mahlon uid=bob
+    copy uid=mahlon ou=Others,dc=example,o=company
+    copy uid=mahlon,ou=People,dc=example,o=company uid=mahlon,ou=Others,dc=example,o=company
+
+aliased to: cp
+
+=item B<create>
+
+Create an entry from scratch.  Arguments are space separated objectClass
+names.  Possible objectClasses are derived automatically from the
+server, and will tab-complete.
+
+After the classes are specified, an editor will launch.  Required
+attributes are listed first, then optional attributes.  Optionals are
+commented out.  After the editor exits, the resulting LDIF is validated
+and added to the LDAP directory.
+
+    create top person organizationalPerson inetOrgPerson posixAccount
+
+aliased to: touch
+
+=item B<delete>
+
+Remove an entry from the directory.  Globbing is supported.
+All deletes are sanity-prompted.
+
+    delete uid=mahlon
+    delete uid=ma*
+
+aliased to: rm
+
+=item B<edit>
+
+Edit an entry in an external editor.  After the editor exits, the
+resulting LDIF is sanity checked, and changes are written to the LDAP
+directory.
+
+    edit uid=mahlon
+
+aliased to: vi
+
+=item B<env>
+
+ Show values for various runtime variables.
+
+=item B<grep>
+
+Search for arbitrary LDAP filters, and return matching dn results.
+The search string must be a valid LDAP filter.
+
+    grep uid=mahlon
+    grep uid=mahlon ou=People
+    grep -r (&(uid=mahlon)(objectClass=*))
+
+ aliased to: search
+
+=item B<inspect>
+
+View schema information about a given entry, or a list of arbitrary
+objectClasses, along with the most common flags for the objectClass
+attributes.
+
+    inspect uid=mahlon
+    inspect posixAccount organizationalUnit
+    inspect _schema
+
+The output is a list of found objectClasses, their schema heirarchy
+(up to 'top'), whether or not they are a structural class, and then
+a merged list of all valid attributes for the given objectClasses.
+Attributes are marked as either required or optional, and whether
+they allow multiple values or not.
+
+If you ask for the special "_schema" object, the raw server schema
+is dumped to screen.
+
+=item B<list>
+
+List entries for the current basedn.  Globbing is supported.
+
+aliased to: ls
+
+    ls -l
+    ls -lR uid=mahlon
+    list uid=m*
+
+In 'long' mode, descriptions are listed as well, if they exist.
+There are some default 'long listing' mappings for common objectClass
+types.  You can additionally specify your own mappings in your
+.shelldap.rc, like so:
+
+    ...
+    descmaps:
+        objectClass: attributename
+        posixAccount: gecos
+        posixGroup: gidNumber
+        ipHost: ipHostNumber
+
+=item B<mkdir>
+
+Creates a new 'organizationalUnit' entry.
+
+    mkdir containername
+    mkdir ou=whatever
+
+=item B<move>
+
+Move an entry to a different dn path.  Usage is identical to B<copy>.
+
+aliased to: mv
+
+=item B<passwd>
+
+If supported server side, change the password for a specified entry.
+The entry must have a 'userPassword' attribute.
+
+    passwd uid=mahlon
+
+=item B< pwd>
+
+Print the 'working directory' - aka, the current ldap basedn.
+
+=item B<setenv>
+
+Modify various runtime variables normally set from the command line.
+
+    setenv debug 1
+    export debug=1
+
+=item B<whoami>
+
+Show current auth credentials.  Unless you specified a binddn, this
+will just show an anonymous bind.
+
+=back
+
+=head1 TODO
+
+Referral support.  Currently, if you try to write to a replicant slave,
+you'll just get a referral.  It would be nice if shelldap automatically
+tried to follow it.
+
+For now, it only makes sense to connect to a master if you plan on doing
+any writes.
+
+=head1 BUGS / LIMITATIONS
+
+There is no support for editing binary data.  If you need to edit base64
+stuff, just feed it to the regular ldapmodify/ldapadd/etc tools.
+
+=head1 AUTHOR
+
+Mahlon E. Smith <mahlon@martini.nu>
+
+=cut
+
+package LDAP::Shell;
+use strict;
+use warnings;
+use Term::ReadKey;
+use Term::Shell;
+use Digest::MD5;
+use Net::LDAP qw/
+	LDAP_SUCCESS
+	LDAP_SERVER_DOWN
+	LDAP_OPERATIONS_ERROR
+	LDAP_TIMELIMIT_EXCEEDED
+	LDAP_BUSY
+	LDAP_UNAVAILABLE
+	LDAP_OTHER
+	LDAP_TIMEOUT
+	LDAP_NO_MEMORY
+	LDAP_CONNECT_ERROR /;
+use Net::LDAP::Util qw/ canonical_dn ldap_explode_dn /;
+use Net::LDAP::LDIF;
+use Data::Dumper;
+use File::Temp;
+use Algorithm::Diff;
+use Carp 'confess';
+use base 'Term::Shell';
+require Net::LDAP::Extension::SetPassword;
+
+my $conf = $main::conf;
+
+# make 'die' backtrace in debug mode
+$SIG{'__DIE__'} = \&Carp::confess if $conf->{'debug'};
+
+
+########################################################################
+### U T I L I T Y   F U N C T I O N S
+########################################################################
+
+### Initial shell behaviors.
+### 
+sub init
+{
+	my $self = shift;
+	$self->{'API'}->{'match_uniq'} = 0;
+
+	$self->{'editor'} = $conf->{'editor'} || $ENV{'EDITOR'} || 'vi';
+	$self->{'env'}	= [ qw/ debug cacheage timeout / ];
+
+	# let autocomplete work with the '=' character
+	my $term = $self->term();
+	$term->Attribs->{'basic_word_break_characters'}	 =~ s/=//m;
+	$term->Attribs->{'completer_word_break_characters'} =~ s/=//m;
+
+	# read in history
+	eval {
+		$term->history_truncate_file("$ENV{'HOME'}/.shelldap_history", 50);
+		$term->ReadHistory("$ENV{'HOME'}/.shelldap_history");
+	};
+
+	# gather metadata from the LDAP server
+	$self->{'root_dse'} = $self->ldap->root_dse() or
+		die "Unable to retrieve LDAP server information.  (Doublecheck connection arguments.)\n";
+	$self->{'schema'} = $self->ldap->schema();
+
+	# get an initial list of all objectClasses
+	$self->{'objectclasses'} = [];
+	foreach my $o ( $self->{'schema'}->all_objectclasses() ) {
+		push @{ $self->{'objectclasses'} }, $o->{'name'};
+	}
+
+	if ( $conf->{'debug'} ) {
+		my @versions = $self->{'root_dse'}->get_value('supportedLDAPVersion');
+		print "Connected to $conf->{'server'}\n";
+		print "Supported LDAP version: ", ( join ', ', @versions ), "\n";
+		print "Cipher in use: ", $self->ldap()->cipher(), "\n";
+	}
+
+	# try an initial search and bail early if it doesn't work. (bad baseDN?)
+	my $s = $self->search();
+	die "LDAP baseDN error: ", $s->{'message'}, "\n" if $s->{'code'};
+
+	# okay, now do an initial population of 'cwd' for autocomplete.
+	$self->update_entries();
+
+	# whew, okay.  Update prompt, wait for input!
+	$self->update_prompt();
+
+	return;
+}
+
+
+### Return an LDAP connection handle, creating it if necessary.
+###
+sub ldap
+{
+	my $self = shift;
+	my $rv;
+
+	# use cached connection object if it exists
+	return $self->{'ldap'} if $self->{'ldap'};
+	
+	# fill in potentially missing info
+	die "No server specified.\n" unless $conf->{'server'};
+
+	# Emit a nicer error message if IO::Socket::SSL is
+	# not installed and Net::LDAP decides it is required.
+	#
+	if ( $conf->{'tls'} || $conf->{'server'} =~ m|ldaps://| ) {
+		eval 'use IO::Socket::SSL';
+		die qq{IO::Socket::SSL not installed, but is required for SSL or TLS connections.
+You may try connecting insecurely, or install the module and try again.\n} if $@;
+	}
+
+	# Prompt for a password after disabling local echo.
+	#
+	if ( ($conf->{'binddn'} && ! $conf->{'bindpass'}) || $conf->{'promptpass'} ) {
+		print "Bind password: ";
+		Term::ReadKey::ReadMode 2;
+		chomp( $conf->{'bindpass'} = <STDIN> );
+		Term::ReadKey::ReadMode 0;
+		print "\n";
+	}
+
+	# make the connection
+	my $ldap = Net::LDAP->new( $conf->{'server'} )
+		or die "Unable to connect to LDAP server '$conf->{'server'}': $!\n";
+
+	# secure connection options
+	#
+	if ( $conf->{'tls'} )  {
+		if ( $conf->{'tls_key'} ) {
+			$ldap->start_tls( 
+				verify     => 'require',
+				cafile     => $conf->{'tls_cacert'},
+				clientcert => $conf->{'tls_cert'},
+				clientkey  => $conf->{'tls_key'},
+				keydecrypt => sub {
+					print "Key Passphrase: "; 
+					Term::ReadKey::ReadMode 2;
+					chomp( my $secret = <STDIN> );
+					Term::ReadKey::ReadMode 0;
+					print "\n";
+					return $secret;
+				});
+		}
+		else {
+			$ldap->start_tls( verify => 'none' );
+		}
+	}
+
+	# bind as an authenicated dn
+	if ( $conf->{'binddn'} ) {
+		$rv = $ldap->bind(
+			$conf->{'binddn'},
+			password => $conf->{'bindpass'}
+		);
+	}
+
+	# bind anonymously
+	else {
+		$rv = $ldap->bind();
+	}
+
+	my $err = $rv->error();
+	$self->debug(
+		"Bind as " .
+		( $conf->{'binddn'} ? $conf->{'binddn'} : 'anonymous' ) .
+		" to " . $conf->{'server'} . ": $err\n"
+	);
+
+	if ( $rv->code() ) {
+		$err .= " (try the --tls flag?)" if $err =~ /confidentiality required/i;
+		die "LDAP bind error: $err\n";
+	}
+
+	# Offer to cache authentication info.
+	# If we enter this conditional, we have successfully authed with the server
+	# (non anonymous), and we haven't cached anything in the past.
+	#
+	if ( $conf->{'binddn'} && ! -e $conf->{'configfile'} ) {
+		print "Would you like to cache your connection information? [Yn]: ";
+		chomp( my $response = <STDIN> );
+		unless ( $response =~ /^n/i ) {
+			YAML::Syck::DumpFile( $conf->{'configfile'}, $conf );
+			chmod 0600, $conf->{'configfile'};
+			print "Connection info cached to $conf->{'configfile'}.\n";
+		}
+	}
+
+	$self->{'ldap'} = $ldap;
+	return $ldap;
+}
+
+
+### Return a new LDIF object, suitable for populating with
+### a Net::LDAP::Entry.
+###
+sub ldif 
+{
+	my $self	 = shift;
+	my $use_temp = shift;
+
+	# create tmpfile and link ldif object with it
+	#
+	if ( $use_temp ) {
+		my ( undef, $fname ) =
+		  File::Temp::tempfile( 'shelldap_XXXXXXXX', SUFFIX => '.ldif', DIR => '/tmp', UNLINK => 1 );
+		$self->{'ldif'}	      = Net::LDAP::LDIF->new( $fname, 'w', sort => 1, wrap => $self->wrapsize );
+		$self->{'ldif_fname'} = $fname;
+	}
+
+	# ldif -> stdout
+	else {
+		$self->{'ldif'} = Net::LDAP::LDIF->new( \*STDOUT, 'w', sort => 1, wrap => $self->wrapsize );
+	}
+
+	return $self->{'ldif'};
+}
+
+
+### Return an Entry object from an LDIF filename, or undef if there was an error.
+###
+sub load_ldif
+{
+	my $self = shift;
+	my $ldif = Net::LDAP::LDIF->new( shift(), 'r' );
+
+	return unless $ldif;
+
+	my $e;
+	eval { $e = $ldif->read_entry(); };
+
+	return if $@;
+	return $e;
+}
+
+
+### Given a filename, return an md5 checksum.
+###
+sub chksum 
+{
+	my $self = shift;
+	my $file = shift or return;
+
+	my $md5 = Digest::MD5->new();
+	open F, $file or die "Unable to read file: $!\n";
+	my $hash = $md5->addfile( *F )->hexdigest();
+	close F;
+
+	return $hash;
+}
+
+
+### Find and return the current terminal width.
+###
+sub wrapsize
+{
+	my $self = shift;
+
+	my $wrap = $conf->{'wrap'};
+	eval {
+		my $rows;
+		my $term = Term::ReadLine->new( 1 );
+		( $rows, $wrap ) = $term->get_screen_size() unless $wrap;
+	};
+
+	$wrap ||= 78;
+	return $wrap;
+}
+
+
+### Used by Term::Shell to generate the prompt.
+###
+sub prompt_str
+{
+	my $self = shift;
+	return $self->{'prompt'};
+}
+
+
+### Display the current working entry as the prompt,
+### truncating if necessary.
+###
+sub update_prompt 
+{
+	my $self = shift;
+	my $base = $self->base();
+
+	if ( length $base > 50 ) {
+		my $cwd_dn = $1 if $base =~ /^(.*?),/;
+		$self->{'prompt'} = "... $cwd_dn > ";
+	}
+	else {
+		my $prompt = $base;
+		$prompt =~ s/$conf->{'basedn'}/~/;
+		$self->{'prompt'} = "$prompt > ";
+	}
+	return;
+}
+
+
+### Prompt the user to re-edit their LDIF on error.
+### Returns true if the user wants to do so.
+###
+sub prompt_edit_again
+{
+	my $self = shift;
+	print "Edit again? [Yn]: ";
+	chomp( my $ans = <STDIN> );
+	return $ans !~ /^n/i;
+}
+
+
+### Return the basedn of the LDAP connection, being either explicitly
+### configured or determined automatically from server metadata.
+###
+sub base 
+{
+	my $self = shift;
+	$self->{'base'} ||= $conf->{'basedn'};
+
+	# try and determine base automatically from rootDSE
+	#
+	unless ( $self->{'base'} ) {
+		my @namingContexts = $self->{'root_dse'}->get_value('namingContexts');
+		$conf->{'basedn'} = $namingContexts[0];
+		$self->{'base'}   = $namingContexts[0];
+	}
+	if ( $_[0] ) {
+		my $base = canonical_dn( $_[0], casefold => 'none' );
+		$self->{'base'} = $base if $base;
+	}
+	return $self->{'base'};
+}
+
+
+### Returns true if the specified dn is valid on this LDAP server.
+###
+sub is_valid_dn 
+{
+	my $self = shift;
+	my $dn   = shift or return 0;
+
+	my $r = $self->search({ base => $dn });
+	return $r->{'code'} == LDAP_SUCCESS ? 1 : 0;
+}
+
+
+### Perform an LDAP search.
+###
+### Returns a hashref containing the return code and
+### an arrayref of Net::LDAP::Entry objects.
+###
+sub search 
+{
+	my $self = shift;
+	my $opts = shift || {};
+
+	$opts->{'base'}   ||= $self->base(),
+	$opts->{'filter'} ||= '(objectClass=*)';
+	$opts->{'scope'}  ||= 'base';
+
+	my $search = sub { 
+		return $self->ldap->search(
+			base	  => $opts->{'base'},
+			filter	  => $opts->{'filter'},
+			scope	  => $opts->{'scope'},
+			timelimit => $conf->{'timeout'},
+			typesonly => ! $opts->{'vals'},
+			attrs	  => $opts->{'attrs'} || ['*']
+		);
+	};
+
+	my $s = $self->with_retry( $search );
+	my $rv = {
+		code	=> $s->code(),
+		message => $s->error(),
+		entries => []
+	};
+
+	$rv->{'entries'} =
+	  $opts->{'scope'} eq 'base' ? [ $s->shift_entry() ] : [ $s->entries() ];
+
+	return $rv;
+}
+
+
+### Maintain the cache of possible autocomplete values for
+### the current DN.
+###
+sub update_entries 
+{
+	my $self = shift;
+	my %opts = @_;
+	my $base = lc( $self->base() );
+	
+	my $s = $opts{'search'} || $self->search({ scope => 'one', base => $base });
+
+	$self->{'cwd_entries'} = [];
+	return if $s->{'code'};
+
+	# setup cache object
+	$self->{'cache'} ||= {};
+	$self->{'cache'}->{ $base } ||= {};
+	$self->{'cache'}->{ $base } = {} if $opts{'clearcache'};
+	my $cache = $self->{'cache'}->{ $base };
+
+	my $now = time();
+	if ( ! exists $cache->{'entries'}
+		or $now - $cache->{'timestamp'} > $conf->{'cacheage'} )
+	{
+		$self->debug("Caching entries for $base\n");
+		foreach my $e ( @{ $s->{'entries'} } ) {
+			my $dn  = $e->dn();
+			my $rdn = $dn;
+			$rdn =~ s/,$base//i;  # remove base from display
+			push @{ $self->{'cwd_entries'} }, $rdn;
+		}
+		$cache->{'timestamp'} = $now;
+		$cache->{'entries'} = $self->{'cwd_entries'};
+	}
+	else {
+		$self->debug("Using cached lookups for $base\n");
+	}
+
+	$self->{'cwd_entries'} = $cache->{'entries'};
+	return;
+}
+
+
+### Roughly convert a given path to a DN.
+###
+### Additionally support:
+###    parent  '..'
+###    current '.'
+###    last    '-'
+###    home    '~'
+###
+### Synopsis: $dn = $self->path_to_dn( $path );
+###
+sub path_to_dn
+{
+	my $self    = shift;
+	my $path    = shift;
+	my %flags   = @_;
+	my $curbase = $self->base();
+
+	# support empty 'cd' or 'cd ~' going to root
+	return $conf->{'basedn'} if ! $path || $path eq '~';
+
+	# return current base DN
+	return $curbase if $path eq '.';
+
+	# support 'cd -'
+	return $self->{'previous_base'} if $path eq '-';
+
+	# relative path, upwards
+	#
+	if ( $path =~ /^\.\./o ) {
+		# support '..' (possibly iterated and as prefix to a DN)
+		my @base = @{ ldap_explode_dn($curbase, casefold => 'none') };
+
+		# deal with leading ..,
+		#
+		while ( $path =~ /^\.\./ ) {
+			shift( @base ) if @base;
+			$path =~ s/^\.\.//;
+			last if $path !~ /[,\/]\s*/;
+			$path =~ s/[,\/]\s*//;
+		}
+
+		# append the new dn to the node if one was specified:
+		#    cd ../../cn=somewhere  vs
+		#    cd ../../
+		#
+		my $newbase_root = canonical_dn( \@base, casefold => 'none' );
+		$path = $path ? $path . ',' . $newbase_root : $newbase_root;
+	}
+
+	# attach the base if it isn't already there (this takes care of
+	# deeper relative nodes and absolutes)
+	#
+	else {
+		$path = "$path," . $curbase unless $path =~ /$curbase/;
+	}
+
+	return $path;
+}
+
+
+### Given an array ref of shell-like globs, 
+### create and return a Net::LDAP::Filter object.
+###
+sub make_filter 
+{
+	my $self  = shift;
+	my $globs = shift or return;
+
+	return unless ref $globs eq 'ARRAY';
+	return unless scalar @$globs;
+
+	my $filter;
+	$filter = join('', map { (/^\(.*\)$/o) ? $_ : "($_)" } @$globs);
+	$filter = '(|' . $filter . ')'  if (scalar(@$globs) > 1);
+	$filter = Net::LDAP::Filter->new( $filter );
+
+	if ( $filter ) {
+		$self->debug( 'Filter parsed as: ' . $filter->as_string() . "\n" );
+	}
+	else {
+		print "Error parsing filter.\n";
+		return;
+	}
+
+	return $filter;
+}
+
+
+### Given an arrayref of objectClasses, pull a complete list of 
+### required and optional attrbutes.  Returns two arrayrefs.
+###
+sub fetch_attributes
+{
+	my $self = shift;
+	my $ocs  = shift or return [], [];
+
+	my ( %seen, @must_attr, @may_attr );
+	foreach my $oc ( sort @{$ocs} ) {
+
+		# required
+		my @must = $self->{'schema'}->must( $oc );
+		foreach my $attr ( sort { $a->{'name'} cmp $b->{'name'} } @must ) {
+			next if $attr->{'name'} =~ /^objectclass$/i;
+			next if $seen{ $attr->{'name'} };
+			push @must_attr, $attr->{'name'};
+			$seen{ $attr->{'name'} }++;
+		}
+
+		# optional
+		my @may  = $self->{'schema'}->may( $oc );
+		foreach my $attr ( sort { $a->{'name'} cmp $b->{'name'} } @may ) {
+			next if $attr->{'name'} =~ /^objectclass$/i;
+			next if $seen{ $attr->{'name'} };
+			push @may_attr, $attr->{'name'};
+			$seen{ $attr->{'name'} }++;
+		}
+	}
+
+	return \@must_attr, \@may_attr;
+}
+
+
+### Check whether a given string can be used directly as
+### an LDAP search filter.
+###
+### Synopsis: $yesNo = $self->is_valid_filter($string);
+###
+sub is_valid_filter
+{
+	my $self   = shift;
+	my $filter = shift or return;
+
+	return Net::LDAP::Filter->new( $filter ) ? 1 : 0;
+}
+
+
+### Call code in subref $action, if there's any connection related errors,
+### try it one additional time before giving up.  This should take care of
+### most server disconnects due to timeout and other generic connection
+### errors, and will attempt to transparently re-establish a connection.
+###
+sub with_retry
+{
+	my $self = shift;
+	my $action = shift;
+
+	my $rv = $action->();
+	if ( $rv->code() == LDAP_OPERATIONS_ERROR   ||
+		 $rv->code() == LDAP_TIMELIMIT_EXCEEDED ||
+		 $rv->code() == LDAP_BUSY               ||
+		 $rv->code() == LDAP_UNAVAILABLE        ||
+		 $rv->code() == LDAP_OTHER              ||
+		 $rv->code() == LDAP_SERVER_DOWN        ||
+		 $rv->code() == LDAP_TIMEOUT            ||
+		 $rv->code() == LDAP_NO_MEMORY          ||
+		 $rv->code() == LDAP_CONNECT_ERROR ) {
+
+		$self->debug( "Error ". $rv->code() . ", retrying.\n" );
+		$self->{'ldap'} = undef;
+		$rv = $action->();
+	}
+
+	return $rv;
+}
+
+
+### little. yellow. different. better.
+###
+sub debug 
+{
+	my $self = shift;
+	return unless $conf->{'debug'};
+	print "\e[33m";
+	print shift();
+	print "\e[0m";
+	return;
+}
+
+
+### Autocomplete values: Returns cached children entries.
+###
+sub autocomplete_cwd
+{
+	my $self = shift;
+	return @{ $self->{'cwd_entries'} };
+}
+
+
+### Autocomplete values: Returns previously set shelldap environment values.
+###
+sub comp_setenv
+{ 
+	my $self = shift;
+	return @{ $self->{'env'} };
+}
+
+
+### Autocomplete values: Returns all objectClasses as defined
+### by the LDAP server.
+###
+sub comp_create
+{
+	my $self = shift;
+	return @{ $self->{'objectclasses'} };
+}
+
+
+### Autocomplete values: Returns all objectClasses as defined
+### by the LDAP server, along with current children DNs.
+###
+sub comp_inspect
+{
+	my $self = shift;
+	return ('_schema', @{ $self->{'objectclasses'} }, @{ $self->{'cwd_entries'} });
+}
+
+
+### Inject various autocomplete and alias routines into the symbol table.
+###
+{
+	no warnings;
+	no strict 'refs';
+
+	# command, alias
+	my %cmd_map = (
+		whoami => 'id',
+		list   => 'ls',
+		grep   => 'search',
+		edit   => 'vi',
+		delete => 'rm',
+		copy   => 'cp',
+		cat    => 'read',
+		move   => 'mv',
+		cd     => undef,
+		passwd => undef
+	);
+
+	# setup autocompletes
+	foreach ( %cmd_map ) {
+		next unless $_;
+		my $sub = "comp_$_";
+		*$sub   = \&autocomplete_cwd;
+	}
+	*comp_touch   = \&comp_create;
+	*comp_export  = \&comp_setenv;
+
+	# setup alias subs
+	#
+	# Term::Shell has an alias_* feature, but
+	# it seems to work about 90% of the time.
+	# that last 10% is something of a mystery.
+	#
+	$cmd_map{'create'} = 'touch';
+	foreach my $cmd ( keys %cmd_map ) {
+		next unless defined $cmd_map{$cmd};
+		my $alias_sub = 'run_' . $cmd_map{$cmd};
+		my $real_sub  = 'run_' . $cmd;
+		*$alias_sub = \&$real_sub;
+	}
+}
+
+
+### Given an $arrayref, remove LDIF continuation wrapping in place,
+### effectively making each entry a single line for LCS comparisons.
+### 
+sub unwrap_line {
+	my $self  = shift;
+	my $array = shift;
+
+	my $i = 1;
+	while ( $i < scalar(@$array) ) {
+		if ( $array->[$i] =~ /^\s/ ) {
+			$array->[ $i - 1 ] =~ s/\n$//;
+			$array->[ $i ] =~ s/^\s//;
+			splice( @$array, $i - 1, 2, $array->[$i - 1] . $array->[$i] );
+		}
+		else {
+			$i++;
+		}
+	}
+}
+
+
+########################################################################
+### S H E L L   M E T H O D S
+########################################################################
+
+### Don't die on a newline, just no-op.
+###
+sub run_ { return; }
+
+
+### Term::Shell hook.
+### Write history for each command, print shell debug actions.
+###
+sub precmd
+{
+	my $self = shift;
+	my ( $handler, $cmd, $args ) = @_;
+
+	my $term = $self->term();
+	eval { $term->WriteHistory("$ENV{'HOME'}/.shelldap_history"); };
+
+	$self->debug( "$$cmd (" . ( join ' ', @$args ) . "), calling '$$handler'\n" );
+	return;
+} 
+
+
+### Display an entry as LDIF to the terminal.
+###
+sub run_cat 
+{
+	my $self  = shift;
+	my $dn    = shift;
+	my @attrs = (@_) ? @_ : ('*');
+
+	unless ( $dn ) {
+		print "No dn provided.\n";
+		return;
+	}
+
+	# support '.'
+	$dn = $self->base() if $dn eq '.';
+
+	# support globbing
+	#
+	my $s;
+	if ( $dn eq '*' ) {
+		$s = $self->search({
+			scope  => 'one',
+			vals   => 1,
+			attrs  => \@attrs
+		});
+	}
+	elsif ( $dn =~ /\*/ ) {
+		$s = $self->search({
+			scope  => 'one',
+			vals   => 1,
+			filter => $dn,
+			attrs  => \@attrs
+		});
+	}
+
+	# absolute/relative dn
+	#
+	else {
+		$dn = $self->path_to_dn( $dn );
+		$s = $self->search({
+			base   => $dn,
+			vals   => 1,
+			attrs  => \@attrs
+		});
+	}
+
+	# emit error, if any
+	#
+	if ( $s->{'code'} ) {
+		print $s->{'message'} . "\n";
+		return;
+	}
+
+	# display to stdout
+	#
+	foreach my $e ( @{ $s->{'entries'} } ) {
+		$self->ldif->write_entry( $e );
+		print "\n";
+	}
+
+	return;
+}
+
+
+### Change shelldap's idea of a current working 'directory',
+### by adjusting the current default basedn for all searches.
+###
+sub run_cd 
+{
+	my $self	= shift;
+	my $newbase = shift;
+
+	# convert given path to a DN
+	$newbase = $self->path_to_dn( $newbase );
+
+	unless ( $self->is_valid_dn( $newbase ) ) {
+		print "No such object\n";
+		return;
+	}
+
+	# store old base
+	$self->{'previous_base'} = $self->base();
+
+	# update new base
+	$self->base( $newbase );
+
+	# get new 'cwd' listing
+	my $s = $self->search({ scope => 'one', attrs => [ '1.1' ] });
+	if ( $s->{'code'} ) {
+		print "$s->{'message'}\n";
+		return;
+	}
+	$self->update_entries( search => $s );
+
+	# reflect cwd change in prompt
+	$self->update_prompt();
+	return;
+}
+
+
+### Simply clear the screen.
+###
+sub run_clear
+{
+	my $self = shift;
+	system( 'clear' );
+	return;
+}
+
+
+### Fetch the source DN entry, modify it's DN data
+### and write it back to the directory.
+###
+sub run_copy
+{
+	my $self = shift;
+	my ( $s_dn, $d_dn ) = @_;
+
+	unless ( $s_dn ) {
+		print "No source DN provided.\n";
+		return;
+	}
+	unless ( $d_dn ) {
+		print "No destination DN provided.\n";
+		return;
+	}
+
+	# convert given source path to DN
+	$s_dn = $self->path_to_dn( $s_dn );
+
+	# sanity check source
+	#
+	my $s = $self->search({ base => $s_dn, vals => 1 });
+	unless ( $s->{'code'} == LDAP_SUCCESS ) {
+		print "No such object\n";
+		return;
+	}
+
+	# see if we're copying the entry to a nonexistent path
+	#
+	my ( $new_dn, $old_dn );
+	( $d_dn, $new_dn ) = ( $1, $2 ) if $d_dn =~ /^([\w=]+),(.*)$/;
+	if ( $new_dn ) { # absolute
+		unless ( $self->is_valid_dn( $new_dn ) ) {
+			print "Invalid destination.\n";
+			return;
+		}
+	}
+	else { # relative
+		$new_dn = $self->base();
+	}
+	$old_dn = $1 if $s_dn =~ /^[\w=]+,(.*)$/;
+
+	# get the source entry object
+	my $e = ${ $s->{'entries'} }[0];
+	$e->dn( $s_dn );
+
+	# add changes in new entry instead of modifying existing
+	$e->changetype( 'add' ); 
+	$e->dn( "$d_dn,$new_dn" );
+
+	# get the unique attribute from the dn for modification
+	# perhaps there is a better way to do this...?
+	#
+	my ( $uniqkey, $uniqval ) = ( $1, $2 )
+	  if $d_dn =~ /^([\.\w\-]+)(?:\s+)?=(?:\s+)?([\.\-\s\w]+),?/;
+	unless ( $uniqkey && $uniqval ) {
+		print "Unable to parse unique values from RDN.\n";
+		return;
+	}
+	$e->replace( $uniqkey => $uniqval );
+
+	# update (which will actually create the new entry)
+	#
+	my $update = sub { return $e->update($self->ldap()) };
+	my $rv = $self->with_retry( $update );
+	print $rv->error(), "\n";
+
+	# clear caches
+	#
+	$self->{'cache'}->{ $new_dn } = {} if $new_dn;
+	$self->{'cache'}->{ $old_dn } = {} if $old_dn;
+	$self->update_entries( clearcache => 1 );
+	return;
+}
+
+
+### Create a new entry from scratch, using attributes from
+### what the server's schema says is available from the specified
+### (optional) objectClass list.  Populate a new LDIF file and
+### present an editor to the user.
+###
+sub run_create
+{
+	my $self = shift;
+	my @ocs  = @_;
+
+	# manually generate some boilerplate LDIF.
+	#
+	unless ( $self->{'create_file'} ) {
+		my $fh;
+
+		( $fh, $self->{'create_file'} ) =
+			File::Temp::tempfile( 'shelldap_XXXXXXXX', SUFFIX => '.ldif', DIR => '/tmp', UNLINK => 1 );
+
+		# first print out the dn and object classes.
+		#
+		print $fh 'dn: ???,', $self->base(), "\n";
+		foreach my $oc ( sort @ocs ) {
+			print $fh "objectClass: $oc\n";
+		}
+
+		# gather and print attributes for requested objectClasses
+		#
+		my ( $must_attr, $may_attr ) = $self->fetch_attributes( \@ocs );
+		print $fh "$_: \n"   foreach @{ $must_attr };
+		print $fh "# $_: \n" foreach @{ $may_attr };
+		close $fh;
+	}
+
+	# checksum the file.
+	#
+	my $hash_orig = $self->chksum( $self->{'create_file'} );
+	system( $self->{'editor'}, $self->{'create_file'} ) && die "Unable to launch editor: $!\n";
+
+	# detect a total lack of change
+	#
+	if ( $hash_orig eq $self->chksum($self->{'create_file'}) ) {
+		print "Entry not modified.\n";
+		unlink $self->{'create_file'};
+		$self->{'create_file'} = undef;
+		return;
+	}
+
+	# load in LDIF
+	#
+	my $ldif = Net::LDAP::LDIF->new( $self->{'create_file'}, 'r', onerror => 'warn' );
+	my $e	 = $ldif->read_entry();
+	unless ( $e ) {
+		print "Unable to parse LDIF.\n";
+		unlink $self->{'create_file'};
+		$self->{'create_file'} = undef;
+		return;
+	}
+
+	# create the new entry.
+	#
+	$e->changetype('add');
+	my $create = sub { return $e->update($self->ldap()) };
+	my $rv = $self->with_retry( $create );
+	print $rv->error(), "\n";
+
+	if ( $rv->code() != LDAP_SUCCESS && $self->prompt_edit_again() ) {
+		return $self->run_create();
+	}
+
+	$self->update_entries( clearcache => 1 );
+	unlink $self->{'create_file'};
+	$self->{'create_file'} = undef;
+	return;
+}
+
+
+### Remove an entry (or entries) from the LDAP directory.
+###
+sub run_delete
+{
+	my $self = shift;
+	my @DNs  = @_;
+
+	unless ( scalar @DNs ) {
+		print "No dn specified.\n";
+		return;
+	}
+
+	my $filter;
+	unless ( $DNs[0] eq '*' ) {
+		$filter = $self->make_filter( \@DNs ) or return;
+	}
+
+	my $s = $self->search({ scope => 'one', filter => $filter });
+	unless ( $s->{'code'} == LDAP_SUCCESS ) {
+		print "$s->{'message'}\n";
+		return;
+	}
+
+	print "Are you sure? [Ny]: ";
+	chomp( my $resp = <STDIN> );
+	return unless $resp =~ /^y/i;
+   
+	foreach my $e ( @{ $s->{'entries'} } ) {
+		my $dn = $e->dn();
+		my $rv = $self->ldap->delete( $dn );
+		print "$dn: ", $rv->error(), "\n";
+	}
+   
+	$self->update_entries( clearcache => 1 );
+	return;
+}
+
+
+### Fetch an entry from the directory, write it out to disk
+### as LDIF, launch an editor, then compare changes and write
+### it back to the directory.
+###
+sub run_edit
+{
+	my $self = shift;
+	my $dn   = shift;
+
+	unless ( $dn ) {
+		print "No dn provided.\n";
+		return;
+	}
+
+	# convert given path to DN
+	$dn = $self->path_to_dn( $dn );
+
+	# sanity check
+	#
+	my $s = $self->search({ base => $dn, vals => 1 });
+	unless ( $s->{'code'} == LDAP_SUCCESS ) {
+		print $s->{'message'} . "\n";
+		return;
+	}
+
+	# fetch entry.
+	my $e = ${ $s->{'entries'} }[0];
+	$e->changetype( 'modify' );
+
+	# write it out to disk.
+	#
+	unless( $self->{'edit_again'} )  {
+		my $ldif = $self->ldif(1);
+		$ldif->write_entry( $e );
+		$ldif->done();  # force sync
+	}
+
+	# load it into an array for potential comparison
+	open LDIF, "$self->{'ldif_fname'}" or return;
+	my @orig_ldif = <LDIF>;
+	close LDIF;
+
+	# append optional, unused attributes as comments for fast reference.
+	#
+	unless ( $self->{'edit_again'} )  {
+		my %current_attrs = map { $_ => 1 } $e->attributes();
+		my ( $must_attr, $may_attr ) = $self->fetch_attributes( $e->get_value('objectClass', asref => 1) );
+
+		open LDIF, ">> $self->{'ldif_fname'}";
+		foreach my $opt_attr ( sort { $a cmp $b } @{$may_attr} ) {
+			next if $current_attrs{ $opt_attr };
+			print LDIF "# " . $opt_attr . ":\n";
+		}
+		close LDIF;
+	}
+
+	# checksum it, then open it in an editor
+	#
+	my $hash_orig = $self->chksum( $self->{'ldif_fname'} );
+	system( $self->{'editor'}, $self->{'ldif_fname'} ) &&
+		die "Unable to launch editor: $!\n";
+
+	# detect a total lack of change
+	#
+	if ( $hash_orig eq $self->chksum($self->{'ldif_fname'}) ) {
+		print "Entry not modified.\n";
+		unlink $self->{'ldif_fname'};
+		$self->{'edit_again'} = undef;
+		return;
+	}
+
+	# check changes for basic LDIF validity
+	#
+	while( ! $self->load_ldif($self->{'ldif_fname'}) ) {
+		print "Unable to parse LDIF.\n";
+		if ( $self->prompt_edit_again() ) {
+			system( $self->{'editor'}, $self->{'ldif_fname'} );
+		}
+		else {
+			unlink $self->{'ldif_fname'};
+			$self->{'edit_again'} = undef;
+			return;
+		}
+	}
+
+	# load changes into a new array for comparison
+	#
+	open LDIF, "$self->{'ldif_fname'}" or return;
+	my @new_ldif = <LDIF>;
+	close LDIF;
+
+	# parser subref
+	#
+	my $parse = sub {
+		my $line = shift || $_;
+		return if $line	 =~ /^\#/; # ignore comments
+		my ( $attr, $val ) = ( $1, $2 ) if $line =~ /^(.+?): (.*)$/;
+		return unless $attr;
+		return if index($attr, ':') != -1;  # ignore base64
+		return ( $attr, $val );
+	};
+
+	$self->unwrap_line( \@orig_ldif );
+	$self->unwrap_line( \@new_ldif );
+
+	my $diff = Algorithm::Diff->new( \@orig_ldif, \@new_ldif );
+	HUNK:
+	while ( $diff->Next() ) {
+		next if $diff->Same();
+		my $diff_bit = $diff->Diff();
+		my %seen_attr;
+
+		# attr removal hunk
+		#
+		if ( $diff_bit == 1 ) {
+			foreach ( $diff->Items(1) ) {
+				my ( $attr, $val ) = $parse->( $_ ) or next;
+				$self->debug("DELETE: $_");
+				$e->delete( $attr => [ $val ] );
+			}
+		}
+
+		# attr insertion hunk
+		#
+		if ( $diff_bit == 2 ) {
+			foreach ( $diff->Items(2) ) {
+				my ( $attr, $val ) = $parse->( $_ ) or next;
+				$self->debug("INSERT: $_");
+				$e->add( $attr => $val );
+			}
+		}
+
+		# attr change hunk
+		#
+		if ( $diff_bit == 3 ) {
+
+			# modification to existing line
+			#
+			foreach ( $diff->Items(2) ) {
+				my ( $attr, $val ) = $parse->( $_ ) or next;
+				$self->debug("MODIFY: $_");
+
+				my $cur_vals = $e->get_value( $attr, asref => 1 ) || [];
+				my $cur_valcount = scalar @$cur_vals;
+				next if $cur_valcount == 0; # should have been an 'add'
+
+				# replace immediately 
+				#
+				if ( $cur_valcount == 1 ) {
+					$e->replace( $attr => $val );
+				}
+				else {
+
+					# retain attributes that allow multiples, so updating
+					# one attribute doesn't inadvertently remove others with
+					# the same name.
+					#
+					next if $seen_attr{ $attr };
+					my @new_vals;
+					foreach my $line ( @new_ldif ) {
+						my ( $new_attr, $new_val ) = $parse->( $line ) or next;
+						next unless $new_attr eq $attr;
+						$seen_attr{ $attr }++;
+						push @new_vals, $new_val;
+					}
+
+					$e->replace( $attr => \@new_vals );
+				}
+			}
+
+			# deletion within the same hunk
+			#
+			foreach ( $diff->Items(1) ) {
+				my ( $attr, $val ) = $parse->( $_ ) or next;
+				my $cur_vals = $e->get_value( $attr, asref => 1 ) || [];
+				my $cur_valcount = scalar @$cur_vals;
+
+				next if $cur_valcount == 1;
+				next if $seen_attr{ $attr };
+				$self->debug("DELETE: $_");
+				$e->delete( $attr => [ $val ] );
+			}
+		}
+	}
+
+	my $update = sub { return $e->update( $self->ldap ); };
+	my $rv = $self->with_retry( $update );
+	print $rv->error(), "\n";
+
+	if ( $rv->code() != LDAP_SUCCESS && $self->prompt_edit_again() ) {
+		$self->{'edit_again'} = 1;
+		return $self->run_edit( $dn );
+	}
+
+	unlink $self->{'ldif_fname'};
+	$self->{'edit_again'} = undef;
+	return;
+}
+
+
+### Display current tunable runtime settings.
+###
+sub run_env
+{
+	my $self = shift;
+
+	foreach ( sort @{ $self->{'env'} } ) {
+		print "$_: ";
+		print $conf->{$_} ? $conf->{$_} : 0; 
+		print "\n"
+	}
+}
+
+
+### Alter settings.
+###
+sub run_setenv
+{
+	my $self = shift;
+	my ( $key, $val ) = @_;
+
+	( $key, $val ) = split /=/, $key if $key && ! defined $val;
+	return unless $key && defined $val;
+	$key = lc $key;
+
+	$conf->{$key} = $val;
+	return;
+}
+
+
+### Search across the directory and display matching entries.
+###
+sub run_grep
+{
+	my $self = shift;
+	my ( $recurse, $filter, $base ) = @_;
+
+	# set 'recursion'
+	unless ( $recurse && $recurse =~ /\-r|recurse/ ) {
+		# shift args to the left
+		( $recurse, $filter, $base ) = ( undef, $recurse, $filter );
+	}
+
+	$filter = Net::LDAP::Filter->new( $filter );
+	unless ( $filter ) {
+		print "Invalid search filter.\n";
+		return;
+	}
+
+	# support '*'
+	$base = $self->base() if ! $base or $base eq '*';
+
+	unless ( $base ) {
+		print "No search base specified.\n";
+		return;
+	}
+
+	# convert base path to DN
+	$base = $self->path_to_dn( $base );
+
+	$self->debug("Filter parsed as: " . $filter->as_string() . "\n");
+
+	my $s = $self->search({
+		scope  => $recurse ? 'sub' : 'one',
+		base   => $base,
+		filter => $filter
+	});
+
+	foreach my $e ( @{ $s->{'entries'} } ) {
+		my $dn = $e->dn();
+		print "$dn\n";
+	}
+
+	return;
+}
+
+
+### Override internal help function with pod2usage output.
+###
+sub run_help 
+{
+	return Pod::Usage::pod2usage(
+		-exitval  => 'NOEXIT',
+		-verbose  => 99,
+		-sections => 'SHELL COMMANDS'
+	);
+}
+
+
+### Generate and display a list of LDAP entries, relative to the current
+### location the command was run from.
+###
+sub run_list
+{
+	my $self  = shift;
+	my @args  = @_;
+	my @attrs = ();
+	my $filter;
+
+	# flag booleans
+	my ( $recurse, $long );
+
+	# parse arguments: [ <option> ...] [<filter> ...] [<attribute> ...]
+	#
+	if ( scalar @args ) {
+		# options: support '-l' or '-R' listings
+		if ( $args[0] =~ /^\-(\w+)/o ) {
+			my $flags = $1;
+			$recurse  = $flags =~ /R/;
+			$long	  = $flags =~ /l/;
+			shift( @args );
+		}
+
+		my @filters;
+
+		# get filter elements from argument list
+		#
+		while ( @args && $self->is_valid_filter($args[0]) ) {
+			push( @filters, shift(@args) );
+		}
+
+		# No filter for display?  Default to all entries.
+		push( @filters, '(objectClass=*)' ) unless scalar @filters;
+		
+		# construct OR'ed filter from filter elements
+		$filter = $self->make_filter( \@filters );
+
+		# remaining arguments must be attributes
+		push( @attrs, @args );
+	}
+
+	# Get all attributes if none are specified, and we're in long-list mode.
+	push( @attrs, '*' )  if $long && ! scalar @attrs;
+
+	my $s = $self->search({
+		scope  => $recurse ? 'sub' : 'one',
+		vals   => 1,
+		filter => $filter,
+		attrs  => [ @attrs, 'hasSubordinates' ]
+	});
+	if ( $s->{'code'} ) {
+		print "$s->{'message'}\n";
+		return;
+	}
+
+	# if an entry doesn't have a description field,
+	# try and show some nice defaults for ls -l !
+	# 
+	# objectClass -> Attribute to show
+	#
+	my %descs = %{
+		$conf->{'descmaps'}
+		  || {
+			posixAccount => 'gecos',
+			posixGroup   => 'gidNumber',
+			ipHost	     => 'ipHostNumber',
+		  }
+	  };
+
+	# iterate and print
+	#
+	my $dn_count = 0;
+	my $base = $self->base();
+	foreach my $e ( sort { $a->dn() cmp $b->dn() } @{ $s->{'entries'} } ) {
+		my $dn = $e->dn();
+		next if lc( $dn ) eq lc( $base );
+
+		if ( ! $long ) {
+			# strip the current base from the dn, if we're recursing and not in long mode
+			if ( $recurse ) {
+				$dn =~ s/,$base//oi;
+			}
+
+			# only show RDN unless -l was given
+			else {
+				$dn = canonical_dn( [shift(@{ldap_explode_dn($dn, casefold => 'none')})], casefold => 'none' )
+			}
+		}
+
+		# if this entry is a container for other entries, append a
+		# trailing slash.
+		$dn .= '/'  if $e->get_value('hasSubordinates') &&
+			$e->get_value('hasSubordinates') eq 'TRUE';
+
+		# additional arguments/attributes were given; show their values
+		#
+		if ( scalar @args ) {
+			my @elements = ( $dn );
+
+			foreach my $attr ( @args ) {
+				my @vals = $e->get_value( $attr );
+				push( @elements, join(',', @vals) );
+			}
+
+			print join( "\t", @elements )."\n";
+		}
+
+		# show descriptions
+		#
+		else {
+			my $desc = $e->get_value( 'description' );
+			if ( $desc ) {
+				$desc =~ s/\n.*//s; # 1st line only
+				$dn .= " ($desc)";
+			}
+
+			# no desc?  Try and infer something useful
+			# to display.
+			#
+			else {
+
+				# pull objectClasses, hash for lookup speed
+				my @oc = $e->get_value( 'objectClass' );
+				my %ochash;
+				map { $ochash{$_} = 1 } @oc;
+
+				foreach my $d_listing ( sort keys %descs ) {
+					if ( exists $ochash{ $d_listing } ) {
+						my $str = $e->get_value( $descs{ $d_listing }, asref => 1 );
+						$dn .= ' (' . (join ', ', @$str) . ')' if $str && scalar @$str;
+					}
+					next;
+				}
+			}
+			print "$dn\n";
+		}
+		$dn_count++;
+	}
+	
+	print "\n$dn_count " .
+		( $dn_count == 1 ? 'object.' : 'objects.') .
+		"\n" if $long;
+	return;
+}
+
+
+### Create a new organizationalUnit entry.
+###
+sub run_mkdir
+{
+	my $self = shift;
+	my $dir  = shift;
+
+	unless ( $dir ) {
+		print "No 'directory' provided.\n";
+		return;
+	}
+
+	# normalize name, if it is not yet a legal DN
+	$dir = 'ou=' . $dir unless canonical_dn( $dir );
+
+	# convert given path to full DN
+	$dir = $self->path_to_dn( $dir );
+
+	# get RDN: naming attributes (lower-case) and their values
+	my %rdn = %{ shift(@{ ldap_explode_dn($dir, casefold => 'lower') }) };
+
+	# add
+	my $mkdir = sub {
+		return $self->ldap()->add( $dir, attr => [
+			objectClass => [ 'top', 'organizationalUnit' ], %rdn
+		]);
+	};
+
+	my $rv = $self->with_retry( $mkdir );
+
+	print $rv->error(), "\n";
+	$self->update_entries( clearcache => 1 );
+	return;
+}
+
+
+### Alter an entry's DN.
+###
+sub run_move
+{
+	my $self = shift;
+	my ( $s_dn, $d_dn ) = @_;
+
+	unless ( $s_dn ) {
+		print "No source dn provided.\n";
+		return;
+	}
+	unless ( $d_dn ) {
+		print "No destination dn provided.\n";
+		return;
+	}
+
+	# convert given source path to DN
+	$s_dn = $self->path_to_dn( $s_dn );
+
+	unless ( $self->is_valid_dn( $s_dn ) ) {
+		print "No such object\n";
+		return;
+	}
+
+	# see if we're moving the entry to a totally new path
+	my ( $new_dn, $old_dn );
+	( $d_dn, $new_dn ) = ( $1, $2 ) if $d_dn =~ /^([\w=]+),(.*)$/;
+	$old_dn = $1 if $s_dn =~ /^[\w=]+,(.*)$/;
+
+	my $moddn = sub {
+		return $self->ldap()->moddn(
+			$s_dn,
+			newrdn	     => $d_dn,
+			deleteoldrdn => 1,
+			newsuperior  => $new_dn
+		);
+	};
+	my $rv = $self->with_retry( $moddn );
+	print $rv->error(), "\n";
+
+	# clear caches
+	$self->{'cache'}->{ $new_dn } = {} if $new_dn;
+	$self->{'cache'}->{ $old_dn } = {} if $old_dn;
+	$self->update_entries( clearcache => 1 );
+	return;
+}
+
+
+### Change the 'userPassword' attribute of an entry, if
+### supported by the LDAP server.
+###
+sub run_passwd 
+{
+	my $self = shift;
+	my $dn   = shift || $self->base();
+
+	$self->{'root_dse'} ||= $self->ldap->root_dse();
+
+	my $pw_extension = '1.3.6.1.4.1.4203.1.11.1';
+	unless ( $self->{'root_dse'}->supported_extension( $pw_extension ) ) {
+		print "Sorry, password changes not supported by LDAP server.\n";
+		return;
+	}
+
+	# convert given path to DN
+	$dn = $self->path_to_dn( $dn );
+
+	my $s = $self->search( { base => $dn, scope => 'base' } );
+	if ( $s->{'code'} ) {
+		print $s->{'message'}, "\n";
+		return;
+	}
+	my $e = ${ $s->{'entries'} }[0];
+
+	unless ( $e->exists('userPassword') ) {
+		print "No userPassword attribute for $dn\n";
+		return;
+	}
+
+	print "Changing password for $dn\n";
+	Term::ReadKey::ReadMode 2;
+	print "Enter new password: ";
+	chomp( my $pw  = <STDIN> );
+	print "\nRetype new password: ";
+	chomp( my $pw2 = <STDIN> );
+	print "\n";
+	Term::ReadKey::ReadMode 0;
+
+	if ( $pw ne $pw2 ) {
+		print "Sorry, passwords do not match.\n";
+		return;
+	}
+
+	my $setpw = sub { return $self->ldap->set_password( user => $dn, newpasswd => $pw ); };
+	my $rv = $self->with_retry( $setpw );
+
+	if ( $rv->code() == LDAP_SUCCESS ) {
+		print "Password updated successfully.\n";
+	}
+	else {
+		print "Password error: " . $rv->error() . "\n";
+	}
+
+	return;
+}
+
+
+### Display the current working "directory".
+###
+sub run_pwd 
+{
+	my $self = shift;
+	print $self->base() . "\n";
+	return;   
+}
+
+
+### Display the currently bound user.
+###
+sub run_whoami
+{
+	my $self = shift;
+	my $msg = ( $conf->{'binddn'} || 'anonymous bind' ) . ' (' .  $conf->{'server'} . ')';
+	print "$msg\n";
+	return;
+}
+
+
+### Show basic information for an entry (DN) or list of objectClasses.
+###
+###   structural/auxillary classes
+###   required attributes
+###   optional attributes
+###
+sub run_inspect
+{
+	my $self = shift;
+	my @ocs  = @_;
+	my $dn   = $ocs[0];
+	my ( $must_attr, $may_attr );
+
+	unless ( $dn ) {
+		print "No DN or objectClass(es) provided.\n";
+		return;
+	}
+
+	# "Magic" argument that dumps all raw schema information.
+	#
+	if ( $dn eq '_schema' ) {
+		$self->{'schema'}->dump();
+		return;
+	}
+
+	# one argument -- if it successfully resolves to a valid DN, fetch
+	# the objectClass list from it.
+	#
+	if ( scalar @ocs == 1 ) {
+		$dn = $self->base() if $dn eq '.';
+		$dn = $self->path_to_dn( $dn );
+
+		my $s = $self->search({ base => $dn, vals => 1, attrs => ['objectClass'] });
+		if ( $s->{'code'} == LDAP_SUCCESS ) {
+			my $e = ${ $s->{'entries'} }[0];
+			@ocs = $e->get_value('objectClass');
+		}
+	}
+
+	# get the complete attributes list.
+	#
+	( $must_attr, $may_attr ) = $self->fetch_attributes( \@ocs );
+	my %must = map { $_ => 1 } @{$must_attr};
+
+	# Output objectClass chains and flags.
+	#
+	print "ObjectClasses:\n";
+	foreach my $oc ( sort @ocs ) {
+		my @sups = $self->findall_supers( $oc );
+
+		my @oc_chain = ( $oc, @sups );
+		my @oc_out;
+
+		foreach my $oc ( @oc_chain ) {
+			my $oc_obj = $self->{'schema'}->objectclass( $oc );
+			next unless $oc_obj;
+
+			$oc = $oc . ' (' . 'structural' . ')' if $oc_obj->{'structural'};
+			push( @oc_out, $oc );
+		}
+
+		print "    " . join( ' --> ', @oc_out ) . "\n" if scalar @oc_out;
+	}
+
+	# Output attributes and flags.
+	#
+	print "\nAttributes:\n";
+	foreach my $attr ( sort (@{$must_attr}, @{$may_attr}) ) {
+		my @flaglist;
+		if ( $self->{'schema'}->attribute( $attr )->{'single-value'} ) {
+			push ( @flaglist, 'single-value' );
+		}
+		else {
+			push ( @flaglist, 'multivalue' );
+		}
+
+		push ( @flaglist, $must{$attr} ? 'required' : 'optional' );
+
+		my $flags = '';
+		$flags = (' (' . join( ', ', sort @flaglist ) . ')') if scalar @flaglist > 0;
+
+		printf( "    %s%s\n", $attr, $flags );
+	}
+
+	print "\n";
+	return;
+}
+
+
+### Recursively walk an objectClass heirarchy, returning an array
+### of inheritence.
+###
+sub findall_supers
+{
+	my $self = shift;
+	my $oc   = shift or return;
+	my @found;
+
+	foreach my $sup ( $self->{'schema'}->superclass($oc) ) {
+		push( @found, $sup );
+		push( @found, $self->findall_supers( $sup ) );
+	}
+
+	return @found;
+}
+
+
+
+########################################################################
+### M A I N
+########################################################################
+
+package main;
+use strict;
+use warnings;
+
+$0 = 'shelldap';
+my $VERSION = '1.0.2';
+
+use Getopt::Long;
+use YAML::Syck;
+use Pod::Usage;
+eval 'use Term::ReadLine::Gnu';
+warn qq{Term::ReadLine::Gnu not installed.
+Continuing, but shelldap is of limited usefulness without it.\n\n} if $@;
+
+# get config - rc file first, command line overrides
+use vars '$conf';
+$conf = load_config() || {};
+Getopt::Long::GetOptions(
+	$conf, 
+	'server|H=s',
+	'configfile|f=s',
+	'binddn|D=s',
+	'basedn|b=s',
+	'cacheage=i',
+	'promptpass|W',
+	'timeout=i',
+	'tls_cacert=s',
+	'tls_cert=s',
+	'tls_key=s',
+	'tls', 'debug', 'version',
+	 help => sub {
+		Pod::Usage::pod2usage(
+			-verbose => 1,
+			-message => "\n$0 command line flags\n" . '-' x 65
+		);
+	}
+);
+
+# show version
+if ( $conf->{'version'} ) {
+	print "$0 $VERSION\n";
+	exit( 0 );
+}
+
+# additional/different config file?
+#
+if ( $conf->{'configfile'} ) {
+	my $more_conf = load_config( $conf->{'configfile'} );
+	while ( my ($k, $v) = each %{$conf} ) { $conf->{ $k } = $v }
+}
+
+
+# defaults
+$conf->{'configfile'} ||= "$ENV{'HOME'}/.shelldap.rc";
+$conf->{'cacheage'} ||= 300;
+$conf->{'timeout'}  ||= 10;
+
+# create and enter shell loop
+my $shell = LDAP::Shell->new();
+$shell->cmdloop();
+
+### load YAML config into global conf.
+###
+sub load_config
+{
+	my $confpath = shift;
+	my ( $d, $data );
+
+	unless ( $confpath ) {
+		my @confs = (
+			"$ENV{'HOME'}/.shelldap.rc",
+			'/usr/local/etc/shelldap.conf',
+			'/etc/shelldap.conf',
+		);
+		foreach ( @confs ) {
+			if ( -e $_ ) {
+				$confpath = $_;
+				last;
+			}
+		}
+	}
+	$confpath or return undef;
+
+	open YAML, $confpath or return undef;
+	do {
+		local $/ = undef;
+		$data = <YAML>;  # slurp!
+	};
+	close YAML;
+
+	eval { $conf = YAML::Syck::Load( $data ) };
+	die "Invalid YAML in $confpath\n" if $@;
+
+	return $conf;
+}
+
+### EOF
+

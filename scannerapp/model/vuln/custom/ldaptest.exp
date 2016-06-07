@@ -1,0 +1,26 @@
+#!/usr/bin/expect
+#
+# This file is part of the Kintun - Restful Vulnerability Scanner
+#
+# (c) CERT UNLP <support@cert.unlp.edu.ar>
+#
+# This source file is subject to the GPL v3.0 license that is bundled
+# with this source code in the file LICENSE.
+#
+
+log_user 1
+spawn timeout 5 ./[lindex $argv 0] -h [lindex $argv 1] --tls
+
+expect {
+  "* > " { send "whoami\n" }
+  "error" { send_user "\nUnable to connect.\n"; exit 1}
+}
+expect "* > " { send "ls\n" }
+expect {
+  "*=*" {
+      expect "* > " { send "ls\n" }
+      send_user "\nShelldap service is vulnerable.\n"; exit 0 }
+  "* > " { send_user "\nShelldap service is not vulnerable.\n"; exit 0 }
+}
+send "exit\n"
+close
