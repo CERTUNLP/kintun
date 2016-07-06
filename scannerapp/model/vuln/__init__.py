@@ -23,5 +23,6 @@ __all__ = [
 "snmpsysdescr",
 "socksopenproxy",
 "dnszonetransfer",
-"dnsrecursiveexternal"
+"dnsrecursiveexternal",
+"rpcinfo"
 ]
