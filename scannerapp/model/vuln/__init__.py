@@ -24,5 +24,5 @@ __all__ = [
 "socksopenproxy",
 "dnszonetransfer",
 "dnsrecursiveexternal",
-"rpcinfo"
+"openportmap"
 ]
