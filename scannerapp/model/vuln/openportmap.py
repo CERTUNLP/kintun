@@ -39,6 +39,7 @@ class OpenPortmap(Scan):
 		return command + ["-p "+','.join(ports)]
 
 	def prepareOutput(self, data):
+        # TODO: CAN't PARSE THIS
 		return self.parseAsNmapScript(data)
 
 	def getDefaultPorts(self):
