@@ -27,7 +27,7 @@ class NtpMonlist(Scan):
 		command += ["-Pn"]
 		command += ["-n"]
 		command = self.addCommandPorts(command,self.ports)
-		command += ["--script="+self.getNseFolder()+"ntp-monlist.nse"]
+		command += ["--script=ntp-monlist"]
 		command += [self.network]
 		command += ["-oX="+self.getOutputXmlFilePath()]
 		return command

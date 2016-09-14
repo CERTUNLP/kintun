@@ -23,10 +23,10 @@ class NtpInfo(Scan):
 	def getCommand(self):
 		command = []
 		command += ["nmap"]
-		command += ["-Pn"]
+		command += ["-sU"]
 		command = self.addCommandPorts(command,self.ports)
 		#no funciona con script del sistema, solo con path parcial
-		command += ["--script="+self.getNseFolder()+"ntp-info.nse"]
+		command += ["--script=ntp-info"]
 		command += [self.network]
 		command += ["-oX="+self.getOutputXmlFilePath()]
 		return command
