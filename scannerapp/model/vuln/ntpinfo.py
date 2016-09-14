@@ -28,7 +28,7 @@ class NtpInfo(Scan):
 		#no funciona con script del sistema, solo con path parcial
 		command += ["--script=ntp-info"]
 		command += [self.network]
-		command += ["-oX="+self.getOutputXmlFilePath()]
+		command += ["-oA="+self.getOutputFilePath()]
 		return command
 
 	def addCommandPorts(self, command, ports):

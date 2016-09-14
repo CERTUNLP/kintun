@@ -29,7 +29,7 @@ class NtpMonlist(Scan):
 		command = self.addCommandPorts(command,self.ports)
 		command += ["--script=ntp-monlist"]
 		command += [self.network]
-		command += ["-oX="+self.getOutputXmlFilePath()]
+		command += ["-oA="+self.getOutputFilePath()]
 		return command
 
 	def addCommandPorts(self, command, ports):
