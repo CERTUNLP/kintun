@@ -10,40 +10,43 @@
 from ..scan import Scan
 
 class Poodle(Scan):
-	name = "ssl-poodle"
+    name = "ssl-poodle"
 
-	def __init__(self, *initial_data, **kwargs):
-		Scan.__init__(self, initial_data, kwargs)
+    def __init__(self, *kwargs, **kwargs2):
+        Scan.__init__(self, kwargs, kwargs2)
 
-	@classmethod
-	def getName(cls):
-		return cls.name
+    @classmethod
+    def getName(cls):
+        return cls.name
 
-	def getNGENName(self):
-		return "poodle"
+    def getNGENName(self):
+        return "poodle"
 
 # nmap -sV --version-light --script ssl-poodle -p 443 <host>
-	def getCommand(self):
-		command = []
-		command += ["nmap"]
-		#command += ["-T2"]
-		command += ["-sV"]
-		command += ["--version-light"]
-		command = self.addCommandPorts(command,self.ports)
-		#no funciona con script del sistema, solo con path parcial
-		command += ["--script="+self.getNseFolder()+"ssl-poodle.nse"]
-		command += [self.network]
-		command += ["-oA="+self.getOutputFilePath()]
-		return command
+    def getCommand(self):
+        command = []
+        command += ["nmap"]
+        #command += ["-T2"]
+        command += ["-sV"]
+        command += ["--version-light"]
+        command = self.addCommandPorts(command,self.ports)
+        #no funciona con script del sistema, solo con path parcial
+        command += ["--script="+self.getNseFolder()+"ssl-poodle.nse"]
+        command += [self.network]
+        command += ["-oA="+self.getOutputNmapAllFilePathName()]
+        return command
 
-	def addCommandPorts(self, command, ports):
-		return command + ["-p "+','.join(ports)]
+    def addCommandPorts(self, command, ports):
+        return command + ["-p "+','.join(ports)]
 
-	def prepareOutput(self, data):
-		return self.parseAsNmapScript(data)
+    def prepareOutput(self, data):
+        return self.parseAsNmapScript(data)
 
-	def getDefaultPorts(self):
-		return ["443","465","993","995"]
+    def getDefaultPorts(self):
+        return ["443","465","993","995"]
 
-	def getTypeNGEN(self):
-		return "poodle"
+    def getPortType(self):
+        return "tcp"
+
+    def getTypeNGEN(self):
+        return "poodle"

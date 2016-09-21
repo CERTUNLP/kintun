@@ -15,15 +15,15 @@ from .model.scan import Scan
 from flask import jsonify, abort, make_response, request, url_for
 from bson.objectid import ObjectId
 
+from config import db
 import json
 
-@app.route('/api/scan/<path:scan_id>', methods=['GET'])
+@app.route('/api/scan/<scan_id>', methods=['GET'])
 def get_scan(scan_id):
-    s = scans.find_one({"_id": ObjectId(scan_id)})
-    if s == None:
-        abort(404)
-    s = Scan(**scan)
-    return s.toJson()
+    x = Scan.get(scan_id, db)
+    return jsonify(make_public_scan(x.toDict()))
+    #return x.toJson()
+
 
 @app.errorhandler(404)
 def not_found(error):
@@ -57,9 +57,9 @@ def create_scan():
     except Exception as err:
         abort(400,err.args)
     #scan.save(db)
-    return s.toJson(), 201
+    return jsonify(make_public_scan(s.toDict())), 201
 
-@app.route('/api/scans/<int:scan_id>', methods=['PUT'])
+@app.route('/api/scans/<scan_id>', methods=['PUT'])
 def update_scan(scan_id):
     s = [scan for scan in scans if scan['id'] == scan_id]
     if len(s) == 0:
@@ -77,7 +77,7 @@ def update_scan(scan_id):
     s[0]['done'] = request.json.get('done', s[0]['done'])
     return jsonify({'scan': s[0]})
 
-@app.route('/api/scans/<int:scan_id>', methods=['DELETE'])
+@app.route('/api/scans/<scan_id>', methods=['DELETE'])
 def delete_scan(scan_id):
     s = [scan for scan in scans if scan['id'] == scan_id]
     if len(s) == 0:
@@ -89,16 +89,21 @@ def make_public_scan(scan):
     new_scan = {}
     for field in scan:
         if field == '_id':
-
             new_scan['uri'] = url_for('get_scan', scan_id=str(scan['_id']), _external=True)
+            new_scan[field] = str(scan[field])
         else:
             new_scan[field] = scan[field]
     return new_scan
 
 @app.route('/api/scans', methods=['GET'])
 def get_scans():
-    scans.find()
-    return jsonify({'scans': [make_public_scan(scan) for scan in scans]})
+    alls = [make_public_scan(scan) for scan in db.scans.find()]
+    return jsonify({"scans":alls, "count":len(alls)})
+
+@app.route('/api/report/<scan_id>', methods=['GET'])
+def report():
+    s = db.scans.find()
+    return jsonify({'scans': [make_public_scan(scan) for scan in s]})
 
 @app.route('/api/print', methods=['POST'])
 def print_something():

@@ -12,55 +12,58 @@ import pprint
 
 # NO ESTA DISPONIBLE!
 class NetbiosSMB(Scan):
-	name = "netbios-smb"
+    name = "netbios-smb"
 
-	def __init__(self, *initial_data, **kwargs):
-		Scan.__init__(self, initial_data, kwargs)
+    def __init__(self, *kwargs, **kwargs2):
+        Scan.__init__(self, kwargs, kwargs2)
 
-	@classmethod
-	def getName(cls):
-		return cls.name
+    @classmethod
+    def getName(cls):
+        return cls.name
 
 # nmap -sU -p 53 --script=dns-recursion <target>
-	def getCommand(self):
-		command = []
-		command += ["smbclient"]
-		command += ["-N"]
-		command += ["-L"]
-		command += [self.network]
-		return command
+    def getCommand(self):
+        command = []
+        command += ["smbclient"]
+        command += ["-N"]
+        command += ["-L"]
+        command += [self.network]
+        return command
 
-	#def addCommandPorts(self, command, ports):
-	#	return command + ["-p "+','.join(ports)]
+    #def addCommandPorts(self, command, ports):
+    #    return command + ["-p "+','.join(ports)]
 
-	def prepareOutput(self, data):
-		print(data)
+    def prepareOutput(self, data):
+        print(data)
 
-	def loadOutput(self, output):
-		print(output)
+    def loadOutput(self, output):
+        print(output)
 
-	#def getDefaultPorts(self):
-	#	return ["137"]
+    def getPortType(self):
+        return "udp"
 
-	def getTypeNGEN(self):
-		return "open_netbios"
+    #def getDefaultPorts(self):
+    #    return ["137"]
 
-#	def getIterablePossibleNmapPorts(self, host):
-#		ports = []
-#		try:
-#			ports = host['hostscript']['script']
-#		except:
-#			pass
-#			raise Exception ("Cannot get info about scan hostscript. Maybe wrong parsed output")
-#		if type(ports) != type([]):
-#			ports = [ports]
-#		return ports
+    def getTypeNGEN(self):
+        return "open_netbios"
 
-	def isVulnerable(self, service, host):
-	#	r = host.get('hostscript', 'Not vulnerable')
-	#	if type(r) == type({}):
-	#		return True
-		return False
+#    def getIterablePossibleNmapPorts(self, host):
+#        ports = []
+#        try:
+#            ports = host['hostscript']['script']
+#        except:
+#            pass
+#            raise Exception ("Cannot get info about scan hostscript. Maybe wrong parsed output")
+#        if type(ports) != type([]):
+#            ports = [ports]
+#        return ports
 
-	def getParsedEvidence(self, service, host):
-		return {'timestamp':str(self._id.generation_time),'service':service,'evidence':host.get('hostscript', 'Evidence error').get('script', 'Evidence error').get('output','Evidence Error').replace('\n', '')}
+    def isVulnerable(self, service, host):
+    #    r = host.get('hostscript', 'Not vulnerable')
+    #    if type(r) == type({}):
+    #        return True
+        return False
+
+    def getParsedEvidence(self, service, host):
+        return {'timestamp':str(self._id.generation_time),'service':service,'evidence':host.get('hostscript', 'Evidence error').get('script', 'Evidence error').get('output','Evidence Error').replace('\n', '')}

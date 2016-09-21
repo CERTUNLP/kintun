@@ -10,35 +10,55 @@
 from ..scan import Scan
 
 class NtpInfo(Scan):
-	name = "ntp-info-readvar"
+    name = "ntp-info-readvar"
 
-	def __init__(self, *initial_data, **kwargs):
-		Scan.__init__(self, initial_data, kwargs)
+    def __init__(self, *kwargs, **kwargs2):
+        Scan.__init__(self, kwargs, kwargs2)
 
-	@classmethod
-	def getName(cls):
-		return cls.name
+    @classmethod
+    def getName(cls):
+        return cls.name
 
 # nmap -sU -p 123 --script ntp-info <target>
-	def getCommand(self):
-		command = []
-		command += ["nmap"]
-		command += ["-sU"]
-		command = self.addCommandPorts(command,self.ports)
-		#no funciona con script del sistema, solo con path parcial
-		command += ["--script=ntp-info"]
-		command += [self.network]
-		command += ["-oA="+self.getOutputFilePath()]
-		return command
+    def getCommand(self):
+        command = []
+        command += ["nmap"]
+        command += ["-sU"]
+        command = self.addCommandPorts(command,self.ports)
+        #no funciona con script del sistema, solo con path parcial
+        command += ["--script=ntp-info"]
+        command += [self.network]
+        command += ["-oA="+self.getOutputNmapAllFilePathName()]
+        return command
 
-	def addCommandPorts(self, command, ports):
-		return command + ["-p "+','.join(ports)]
+    def addCommandPorts(self, command, ports):
+        return command + ["-p "+','.join(ports)]
 
-	def prepareOutput(self, data):
-		return self.parseAsNmapScript(data)
+    def isVulnerable(self, port, host):
+        r = False
+        try:
+            script = port.get('script', 'Not vulnerable')
+            if type(script['elem']) == type([]):
+                # More than 1 element, otherwise be a {}
+                r = True
+        except:
+            r = False
+        return r
 
-	def getDefaultPorts(self):
-		return ["123"]
+    def getParsedEvidence(self, port, host):
+        result = port.get('script', '')
+        if not result:
+            raise Exception ("Cannot parse evidence as ntpinforeadvar")
+        return result
 
-	def getTypeNGEN(self):
-		return "open_ntp_version"
+    def prepareOutput(self, data):
+        return self.parseAsNmapScript(data)
+
+    def getDefaultPorts(self):
+        return ["123"]
+
+    def getPortType(self):
+        return "udp"
+
+    def getTypeNGEN(self):
+        return "open_ntp_version"

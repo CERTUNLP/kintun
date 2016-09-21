@@ -10,39 +10,39 @@
 from ..scan import Scan
 
 class Rpcinfo(Scan):
-	name = "rpcinfo"
+    name = "rpcinfo"
 
-	def __init__(self, *initial_data, **kwargs):
-		Scan.__init__(self, initial_data, kwargs)
+    def __init__(self, *initial_data, **kwargs):
+        Scan.__init__(self, initial_data, kwargs)
 
-	@classmethod
-	def getName(cls):
-		return cls.name
+    @classmethod
+    def getName(cls):
+        return cls.name
 
-	def getNGENName(self):
-		return "rcpinfo"
+    def getNGENName(self):
+        return "rcpinfo"
 
 # nmap -sV --version-light --script ssl-poodle -p 443 <host>
-	def getCommand(self):
-		command = []
-		command += ["nmap"]
-		#command += ["-T2"]
-		command += ["-sV"]
-		command = self.addCommandPorts(command,self.ports)
-		#no funciona con script del sistema, solo con path parcial
-		command += ["--script="+self.getNseFolder()+"rpcinfo.nse"]
-		command += [self.network]
-		command += ["-oA="+self.getOutputFilePath()]
-		return command
+    def getCommand(self):
+        command = []
+        command += ["nmap"]
+        #command += ["-T2"]
+        command += ["-sV"]
+        command = self.addCommandPorts(command,self.ports)
+        #no funciona con script del sistema, solo con path parcial
+        command += ["--script="+self.getNseFolder()+"rpcinfo.nse"]
+        command += [self.network]
+        command += ["-oA="+self.getOutputFilePath()]
+        return command
 
-	def addCommandPorts(self, command, ports):
-		return command + ["-p "+','.join(ports)]
+    def addCommandPorts(self, command, ports):
+        return command + ["-p "+','.join(ports)]
 
-	def prepareOutput(self, data):
-		return self.parseAsNmapScript(data)
+    def prepareOutput(self, data):
+        return self.parseAsNmapScript(data)
 
-	def getDefaultPorts(self):
-		return ["111"]
+    def getDefaultPorts(self):
+        return ["111"]
 
-	def getTypeNGEN(self):
-		return "rpcinfo"
+    def getTypeNGEN(self):
+        return "rpcinfo"

@@ -10,35 +10,38 @@
 from ..scan import Scan
 
 class DnsRecursive(Scan):
-	name = "dns-recursion"
+    name = "dns-recursion"
 
-	def __init__(self, *initial_data, **kwargs):
-		Scan.__init__(self, initial_data, kwargs)
+    def __init__(self, *kwargs, **kwargs2):
+        Scan.__init__(self, kwargs, kwargs2)
 
-	@classmethod
-	def getName(cls):
-		return cls.name
+    @classmethod
+    def getName(cls):
+        return cls.name
 
 # nmap -sU -p 53 --script=dns-recursion <target>
-	def getCommand(self):
-		command = []
-		command += ["nmap"]
-		command += ["-sU"]
-		command += ["-Pn"]
-		command = self.addCommandPorts(command,self.ports)
-		command += ["--script="+self.getNseFolder()+"dns-recursion.nse"]
-		command += [self.network]
-		command += ["-oX="+self.getOutputFilePath()]
-		return command
+    def getCommand(self):
+        command = []
+        command += ["nmap"]
+        command += ["-sU"]
+        command += ["-Pn"]
+        command = self.addCommandPorts(command,self.ports)
+        command += ["--script="+self.getNseFolder()+"dns-recursion.nse"]
+        command += [self.network]
+        command += ["-oA="+self.getOutputNmapAllFilePathName()]
+        return command
 
-	def addCommandPorts(self, command, ports):
-		return command + ["-p "+','.join(ports)]
+    def addCommandPorts(self, command, ports):
+        return command + ["-p "+','.join(ports)]
 
-	def prepareOutput(self, data):
-		return self.parseAsNmapScript(data)
+    def prepareOutput(self, data):
+        return self.parseAsNmapScript(data)
 
-	def getDefaultPorts(self):
-		return ["53"]
+    def getDefaultPorts(self):
+        return ["53"]
 
-	def getTypeNGEN(self):
-		return "open_dns"
+    def getPortType(self):
+        return "udp"
+
+    def getTypeNGEN(self):
+        return "open_dns"

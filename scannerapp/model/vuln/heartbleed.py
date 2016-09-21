@@ -11,42 +11,45 @@ from ..scan import Scan
 import pprint
 
 class Heartbleed(Scan):
-	name = "heartbleed"
+    name = "heartbleed"
 
-	def __init__(self, *initial_data, **kwargs):
-		Scan.__init__(self, initial_data, kwargs)
+    def __init__(self, *kwargs, **kwargs2):
+        Scan.__init__(self, kwargs, kwargs2)
 
-	@classmethod
-	def getName(cls):
-		return cls.name
+    @classmethod
+    def getName(cls):
+        return cls.name
 
 # nmap -p 443 --script ssl-heartbleed <target>
-	def getCommand(self):
-		command = []
-		command += ["nmap"]
-		command = self.addCommandPorts(command,self.ports)
-		command += ["--script="+self.getNseFolder()+"ssl-heartbleed.nse"]
-		command += [self.network]
-		command += ["-oA="+self.getOutputFilePath()]
-		return command
+    def getCommand(self):
+        command = []
+        command += ["nmap"]
+        command = self.addCommandPorts(command,self.ports)
+        command += ["--script="+self.getNseFolder()+"ssl-heartbleed.nse"]
+        command += [self.network]
+        command += ["-oA="+self.getOutputNmapAllFilePathName()]
+        return command
 
-	def addCommandPorts(self, command, ports):
-		return command + ["-p "+','.join(ports)]
+    def addCommandPorts(self, command, ports):
+        return command + ["-p "+','.join(ports)]
 
-	def prepareOutput(self, data):
-		return self.parseAsNmapScript(data)
+    def prepareOutput(self, data):
+        return self.parseAsNmapScript(data)
 
-	def getDefaultPorts(self):
-		return ["443","465","993"]
+    def getDefaultPorts(self):
+        return ["443","465","993"]
 
-	def getTypeNGEN(self):
-		return "heartbleed"
+    def getPortType(self):
+        return "tcp"
 
-	def getParsedEvidence(self, service, host):
-		return service
+    def getTypeNGEN(self):
+        return "heartbleed"
+
+    def getParsedEvidence(self, service, host):
+        return service
 
 # AGREGADOS:
-#		        Keyword         Decimal         Description
+#                Keyword         Decimal         Description
 #        -------         -------         -----------
 #        nsiiops         261/tcp         IIOP Name Service over TLS/SSL
 #        https           443/tcp         http protocol over TLS/SSL
@@ -63,9 +66,9 @@ class Heartbleed(Scan):
 #        pop3s           995/tcp         pop3 protocol over TLS/SSL
 
 # NO AGREGADOS:
-		# Web
-		# Webdisk=2078
-		# cPanel
-		# cPanel=2083, WHM=2087, Webmail=2096
-		# Other
-		# PleskControlPanel=8443
+        # Web
+        # Webdisk=2078
+        # cPanel
+        # cPanel=2083, WHM=2087, Webmail=2096
+        # Other
+        # PleskControlPanel=8443

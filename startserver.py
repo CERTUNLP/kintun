@@ -11,4 +11,5 @@
 from scannerapp import app
 from config import ssl
 
-app.run( host = "0.0.0.0", ssl_context = ssl )
+app.run( host = "0.0.0.0", debug = True, ssl_context = ssl )
+#app.run( host = "0.0.0.0", ssl_context = ssl )
