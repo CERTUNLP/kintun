@@ -306,7 +306,7 @@ class Scan:
 
     def getEvidenceReport(self, data):
         if self.getParamValueFor('send-nmap-report'):
-            return open(self.getOutputFilePath()+".nmap", "rb").read()
+            return open(self.getOutputFilePathName()+".nmap", "rb").read()
         else:
             return self.getFormatedEvidence(data)
 
