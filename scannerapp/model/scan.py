@@ -224,15 +224,13 @@ class Scan:
             ports = [ports]
         return ports
 
-    def isVulnerable(self, service, host):
-        try:
-            script = service.get('script', 'Not vulnerable')
-            if len(script['elem']) > 1:
-                return True
-        except:
-            return False
+    def isVulnerable(self, port, host):
+        r = host.get('script', 'Not vulnerable')
+        if type(r) == type({}):
+            return True
+        return False
 
-    def getParsedEvidence(self, service, host):
+    def getParsedEvidence(self, port, host):
         #print("base evidence")
         result = host.get('script', '')
         if not result:
@@ -257,15 +255,15 @@ class Scan:
             pnot_vulnerables = []
             evidences = []
             evidence = "None"
-            for service in services:
-                if self.isVulnerable(service,host):
-                    pvulnerables.append(service['portid'])
+            for port in services:
+                if self.isVulnerable(port,host):
+                    pvulnerables.append(port['portid'])
                     try:
-                        evidences.append(self.getParsedEvidence(service,host))
+                        evidences.append(self.getParsedEvidence(port,host))
                     except Exception as e:
                         self.errors.append(str(datetime.datetime.now())+" - Cant get evidence:  "+str(sys.exc_info()[1]))
                 else:
-                    #pnot_vulnerables.append(service['portid'])
+                    #pnot_vulnerables.append(port['portid'])
                     pass
             if pvulnerables != []:
                 ipv4 = self.getIpv4(host['address'])

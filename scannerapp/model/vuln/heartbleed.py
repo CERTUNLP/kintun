@@ -30,6 +30,12 @@ class Heartbleed(Scan):
         command += ["-oA="+self.getOutputNmapAllFilePathName()]
         return command
 
+    def isVulnerable(self, port, host):
+        r = port.get('script', 'Not vulnerable')
+        if type(r) == type({}):
+            return True
+        return False
+
     def addCommandPorts(self, command, ports):
         return command + ["-p "+','.join(ports)]
 
