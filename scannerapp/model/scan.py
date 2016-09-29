@@ -225,7 +225,7 @@ class Scan:
         return ports
 
     def isVulnerable(self, port, host):
-        r = host.get('script', 'Not vulnerable')
+        r = port.get('script', 'Not vulnerable')
         if type(r) == type({}):
             return True
         return False
