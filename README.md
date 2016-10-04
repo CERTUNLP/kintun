@@ -18,99 +18,90 @@ Requires:
 ----
 
 - Python 3
-- Python virtualenv
 - Flask 0.10.1
 - MongoDB 3.0.6
 - NMap +7.3 (https://launchpad.net/~pi-rho/+archive/ubuntu/security)
+- SSL Python Support
 - Expect
 - Shelldap
-- SSL Python Support
 - This proyect!
 
 -----------
 
 
-Install on Linux (easy way):
+Install on Linux (simplified):
 ----------------
 
 
-1. You may have python3 and pip3.
+1. System dependencies.
 
     ```
-    $ sudo apt-get install python3-pip
+    $ sudo apt-get install python3 python3-pip python3-setuptools mongodb python3-dev libssl-dev libffi-dev expect shelldap
     ```
 
-2. Install python virtualenv.
-
-    With GVM (http://gvmtool.net/):
+2. Install Python3 requirements.
 
     ```
-    $ sudo easy_install virtualenv
+    $ sudo pip3 install -r requirements.txt
     ```
 
-    or
+3. Then set up your certificate and key at ssl directory with python3.
 
     ```
-    $ sudo pip3 install virtualenv
-    ```
-
-    or
-
-    ```
-    $ sudo apt-get install python-virtualenv
-    ```
-
-3. Install Flask.
-
-    ```
-    $ sudo apt-get install python3-setuptools
-    $ sudo pip3 install Flask
-    ```
-
-4. Install MongoDB and install only for localhost access without user (by now).
-
-    http://docs.mongodb.org/manual/administration/install-on-linux/
-
-    Ubuntu:
-    ```
-    $ sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv EA312927
-    $ echo "deb http://repo.mongodb.org/apt/ubuntu trusty/mongodb-org/3.2 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-3.2.list
-    $ sudo apt-get update
-    $ sudo apt-get install -y mongodb-org
-    $ sudo apt-get install -y mongodb-org=3.2.1 mongodb-org-server=3.2.1 mongodb-org-shell=3.2.1 mongodb-org-mongos=3.2.1 mongodb-org-tools=3.2.1
-
-    ```
-    or:
-    ```
-    $ sudo apt-get install mongodb
-    ```
-
-    then:
-
-    ```
-    $ sudo pip3 install pymongo
-    $ sudo pip3 install pyOpenSSL
-
-    ```
-
-5. Install SSL dependencies.
-
-    ```
-    $ sudo apt-get install python3-dev libssl-dev libffi-dev
-    $ sudo pip3 install pyopenssl pycrypto cryptography
-    ```
-    Then set up your certificate and key at ssl directory:
-
-    ```
+    $ python3
     >>> from werkzeug.serving import make_ssl_devcert
     >>> make_ssl_devcert('ssl/key', host='localhost')
     ```
 
-6. Run Application.
+Install on Linux (detailed):
+----------------
+
+
+1. You may have python3, pip3 and setuptools.
 
     ```
-    $ sudo python3 startserver.py
+    $ sudo apt-get install python3 python3-pip python3-setuptools
     ```
+
+2. Install MongoDB and install only for localhost access without user (by now). [Documentation](http://docs.mongodb.org/manual/administration/install-on-linux/).
+
+    ```
+    $ sudo apt-get install mongodb
+    ```
+
+3. Install SSL dependencies.
+
+    ```
+    $ sudo apt-get install python3-dev libssl-dev libffi-dev
+    ```
+
+4. Install specific scan utilities.
+
+    ```
+    $ sudo apt-get install expect
+    $ sudo apt-get install shelldap
+    ```
+
+5. Install Python3 requirements.
+
+    ```
+    $ sudo pip3 install -r requirements.txt
+    ```
+
+6. Then set up your certificate and key at ssl directory with python3.
+
+    ```
+    $ python3
+    >>> from werkzeug.serving import make_ssl_devcert
+    >>> make_ssl_devcert('ssl/key', host='localhost')
+    ```
+
+Run on Linux:
+----------------
+
+```
+$ sudo python3 startserver.py
+```
 
 License
 -------
