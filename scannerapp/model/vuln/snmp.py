@@ -26,7 +26,7 @@ class OpenSNMP(Scan):
         command += ["nmap"]
         command += ["-sU"]
         command += ["-Pn"]
-        command += self.addCommandPorts()
+        command = self.addCommandPorts(command,self.ports)
         command += ["-n"]
         command += ["-A"]
         command += ["--host-timeout=60s"]

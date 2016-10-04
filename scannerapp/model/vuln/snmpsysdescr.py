@@ -28,7 +28,7 @@ class OpenSNMPSysdescr(Scan):
         command += ["nmap"]
         command += ["-sU"]
         command += ["-Pn"]
-        command += self.addCommandPorts()
+        command = self.addCommandPorts(command,self.ports)
         command += ["-n"]
         command += [self.network]
         command += ["--script=snmp-sysdescr.nse"]
