@@ -170,6 +170,7 @@ class Scan:
                 raise e
             try:
                 self.result = self.prepareOutput(data)
+                self.finished_at = str(datetime.datetime.now())
             except Exception as e:
                 self.errors.append(str(datetime.datetime.now())+" - Cant parse outputs:  "+str(sys.exc_info()[1]))
                 raise e
@@ -191,7 +192,6 @@ class Scan:
             logger.debug("exception in scan: " + self.getNameId() + "\n" + time + debugmsg+str(t.__name__)+":"+str(v)+"\n")
             #raise e
 
-        self.finished_at = str(datetime.datetime.now())
         self.save()
         logger.info("Terminado: " + self.getNameId())
 
@@ -318,16 +318,11 @@ class Scan:
             url = endpointsconf[out]
             #url = 'http://localhost:8088/'
             if out in ["NGEN", "NGEN-dev", "NGEN-staging"]:
-                print("PARA NGEN")
-                hosts = self.prepareForNGEN()
-                headers = {'Accept' : '*/*', 'Expect': '100-continue'}
-                for h in hosts:
-                    evidence = self.getEvidenceReport(h['evidence'])
-                    files = {'evidence_file': ("evidence.txt", evidence, 'text/plain', {'Expires': '0'})}
-                    response = requests.post(url, data=h['data'], headers=headers, files=files, verify=False)
-                    print(str(response)+str(response.text))
+                hosts = self.sendToNgen(endpointsconf[out])
             elif out in ["faraday"]:
                 hosts = self.sendToFaraday(endpointsconf[out])
+            elif out in ["csv-nap"]:
+                hosts = self.sendToCsvService(endpointsconf[out])
             else:
                 hosts = [self.toJson()]
                 headers = {'Accept' : '*/*', 'Expect': '100-continue'}
@@ -356,6 +351,36 @@ class Scan:
             hosts.append(h)
         #print(hosts)
         return hosts
+
+    def prepareForCsv(self):
+        hosts = []
+        feed = "external_report"
+        if "feed" in self.params:
+            feed = self.params['feed']
+
+        #print(self.result['vulnerables'])
+        for host in self.result['vulnerables']:
+            # ip, port-type, ports, vuln, finished, evidence
+            h = '{0};{1};{2};{3};{4};{5}'.format(
+                host['address'].replace(';',','),
+                self.getPortType().replace(';',','),
+                '-'.join(self.ports).replace(';',','),
+                self.vulnerability.replace(';',','),
+                self.finished_at.replace(';',','),
+                str(host['evidence']).replace(';',',')
+                )
+            hosts.append(h)
+        #print(hosts)
+        return hosts
+
+    def sendToNgen(self, url):
+        hosts = self.prepareForNGEN()
+        headers = {'Accept' : '*/*', 'Expect': '100-continue'}
+        for h in hosts:
+            evidence = self.getEvidenceReport(h['evidence'])
+            files = {'evidence_file': ("evidence.txt", evidence, 'text/plain', {'Expires': '0'})}
+            response = requests.post(url, data=h['data'], headers=headers, files=files, verify=False)
+            print(str(response)+str(response.text))
 
     def sendToFaraday(self, url):
         api = xmlrpc.client.ServerProxy(url)
@@ -387,6 +412,16 @@ class Scan:
                     "",
                     host['evidence']
                     )
+
+    def sendToCsvService(self, url):
+        hosts = self.prepareForCsv()
+        headers = {'Accept' : '*/*', 'Expect': '100-continue'}
+        for h in hosts:
+            print(h)
+            #evidence = self.getEvidenceReport(h['evidence'])
+            #files = {'evidence_file': ("evidence.txt", evidence, 'text/plain', {'Expires': '0'})}
+            response = requests.post(url, data=h, headers=headers, verify=False)
+            #print(str(response)+str(response.text))
 
 #### SUBLCLASS RESPONSIBILITY #####
     def getCommand(self):

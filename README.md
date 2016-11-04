@@ -53,6 +53,8 @@ Install on Linux (simplified):
     >>> make_ssl_devcert('ssl/key', host='localhost')
     ```
 
+4. Copy and modify "config.json.example" to "config.json".
+
 Install on Linux (detailed):
 ----------------
 
@@ -95,6 +97,8 @@ Install on Linux (detailed):
     >>> from werkzeug.serving import make_ssl_devcert
     >>> make_ssl_devcert('ssl/key', host='localhost')
     ```
+
+7. Copy and modify "config.json.example" to "config.json".
 
 Run on Linux:
 ----------------
