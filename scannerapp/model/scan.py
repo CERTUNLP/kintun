@@ -317,7 +317,7 @@ class Scan:
             payloads = []
             url = endpointsconf[out]
             #url = 'http://localhost:8088/'
-            if out in ["NGEN", "NGEN-dev", "NGEN-staging"]:
+            if out in ["NGEN", "NGEN-int", "NGEN-ext", "NGEN-dev-ext", "NGEN-staging-ext", "NGEN-dev-int", "NGEN-staging-int"]:
                 hosts = self.sendToNgen(endpointsconf[out])
             elif out in ["faraday"]:
                 hosts = self.sendToFaraday(endpointsconf[out])

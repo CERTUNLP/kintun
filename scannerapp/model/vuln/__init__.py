@@ -9,6 +9,8 @@
 
 __all__ = [
 "dnsrecursive",
+"dnszonetransfer",
+"dnsrecursiveexternal",
 "heartbleed",
 "httpgooglemalware",
 "httpopenproxy",
@@ -17,12 +19,11 @@ __all__ = [
 "netbiossmb",
 "ntpinfo",
 "ntpmonlist",
+"openportmap",
+"openportmap2",
 "poodle",
 "smtpopenrelay",
 "snmp",
 "snmpsysdescr",
 "socksopenproxy",
-"dnszonetransfer",
-"dnsrecursiveexternal",
-"openportmap"
 ]
