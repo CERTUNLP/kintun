@@ -41,8 +41,19 @@ class OpenSNMP(Scan):
     def isVulnerable(self, service, host):
         #print(service)
         r = service.get('script', 'Not vulnerable')
-        if type(r) in [type({}), type([])]:
-            return True
+        if type(r) == type({}):
+            try:
+                if not r["id"] in ["snmp-hh3c-logins", "snmp-info"]:
+                    return True
+            except KeyError:
+                pass
+        elif type(r) == type([]):
+            for d in r:
+                try:
+                    if not d["id"] in ["snmp-hh3c-logins", "snmp-info"]:
+                        return True
+                except KeyError:
+                    pass
         return False
 
     def prepareOutput(self, data):
