@@ -30,7 +30,7 @@ import traceback
 import xmlrpc.client
 import socket
 
-from config import conf, dbconf, scanconf, endpointsconf, logger, db
+from config import conf, dbconf, scanconf, endpointsconf, logger, db, maillog
 
 class Scan:
     name = "AbstractScan"
@@ -185,11 +185,14 @@ class Scan:
             time = str(datetime.datetime.now())
             tbinfo = traceback.format_tb(tb)#[0]
             #errormsg = "\nError info:\n" + str(sys.exc_info()[1])+"\n"
-            debugmsg = "\nTraceback info:\n" + ''.join(tbinfo) + "\n"
+            basemsg = "exception in scan: " + self.getNameId() + "\n"
+            debugmsg =  time + "\nTraceback info:\n" + ''.join(tbinfo) + \
+                        str(t.__name__)+":"+str(v)+"\n"
             #logger.error("exception\n" + time + errormsg)
-            logger.error("exception in scan: " + self.getNameId() + "\n" + '\n'.join(self.errors))
-            logger.debug("exception in scan: " + self.getNameId() + "\n" + time + debugmsg+str(t.__name__)+":"+str(v)+"\n")
+            logger.error(basemsg + '\n'.join(self.errors))
+            logger.debug(basemsg + debugmsg)
             #raise e
+            maillog.sendError(basemsg + debugmsg + str(self.toJson()))
 
         self.save()
         logger.info("Terminado: " + self.getNameId())
@@ -379,7 +382,12 @@ class Scan:
             evidence = self.getEvidenceReport(h['evidence'])
             files = {'evidence_file': ("evidence.txt", evidence, 'text/plain', {'Expires': '0'})}
             response = requests.post(url, data=h['data'], headers=headers, files=files, verify=False)
+            self.processResponse(response)
             print(str(response)+str(response.text))
+
+    def processResponse(self, response):
+        if not response.status_code in [200,201]:
+            maillog.sendError(str(response)+str(response.text)+"\n"+str(self.toJson()))
 
     def sendToFaraday(self, url):
         api = xmlrpc.client.ServerProxy(url)

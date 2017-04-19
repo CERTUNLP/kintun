@@ -44,5 +44,17 @@
 		"error":{
 			"name":"error.log"
 		}
-	}
+  },
+  "maillog":{
+      "name": "Kintun",
+      "me": "spampot@cert-kintun.unlp.edu.ar",
+      "recipients_error": ["mdurante@cert.unlp.edu.ar"],
+      "recipients_log": ["mdurante@cert.unlp.edu.ar"],
+      "recipients": ["mdurante@cert.unlp.edu.ar"],
+      "subject": "[{0}]{1} Reporte {0}",
+      "body": "Le enviamos un reporte automático. {0}\n\nCERT-UNLP",
+      "mail_server": "163.10.40.194",
+      "file_name": "{0}.txt",
+      "detail": ""
+  }
 }

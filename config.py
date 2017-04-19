@@ -12,6 +12,7 @@ from pprint import pprint
 import logging
 import sys, os
 from pymongo import MongoClient
+from send_mail import MailLog
 
 ################################################################
 ############################ CONFIG ############################
@@ -81,3 +82,9 @@ if not os.path.exists(scanconf["folder_output"]):
 client = MongoClient(dbconf['host'], dbconf['port'])
 db = client[dbconf['db']]
 scans = db.scans
+
+################################################################
+############################ MAILLOG ###########################
+################################################################
+
+maillog = MailLog(conf['maillog'])
