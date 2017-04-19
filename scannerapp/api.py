@@ -51,7 +51,6 @@ def create_scan():
                 ports=rj['ports'],
                 params=rj['params'],
                 outputs=rj['outputs'],
-                report_to=rj['report_to'],
                 origin=request.remote_addr)
         s.start()
     except Exception as err:

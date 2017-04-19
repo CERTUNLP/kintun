@@ -41,7 +41,6 @@ class Scan:
         self._ports = []
         self._outputs = []
         self.params = {}
-        self.report_to = ""
         self.origin = ""
         self.status = "created"
         self.started_at = ""
@@ -471,7 +470,6 @@ class Scan:
                 output_files=self.output_files,
                 finished_at=self.finished_at,
                 params=self.params,
-                report_to=self.report_to,
                 result=self.result,
                 started_at=self.started_at,
                 status=self.status,
