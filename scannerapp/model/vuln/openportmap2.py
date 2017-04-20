@@ -43,6 +43,9 @@ class OpenPortmap2(Scan):
             notv.append({"address":self.getAddress(),"ports":self.getDefaultPorts(),"evidence":' '.join(self.getCommand())+'\n'+result})
         return {"vulnerables":v, "no_vulnerables":notv}
 
+    def isNmapScan():
+        return False
+
     def isVulnerable(self, result):
         return result.find('   program version netid     address                service    owner') >= 0
 

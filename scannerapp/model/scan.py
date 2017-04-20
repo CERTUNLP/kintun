@@ -307,10 +307,13 @@ class Scan:
         return pprint.pformat(data, indent=2)
 
     def getEvidenceReport(self, data):
-        if self.getParamValueFor('send-nmap-report'):
+        if self.isNmapScan() and self.getParamValueFor('send-nmap-report'):
             return open(self.getOutputFilePathName()+".nmap", "rb").read()
         else:
             return self.getFormatedEvidence(data)
+
+    def isNmapScan(self):
+        return True
 
     def sendFeedback(self):
         if self.getParamValueFor('send-full-report'):
