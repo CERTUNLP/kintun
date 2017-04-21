@@ -24,7 +24,7 @@ class NtpInfo(Scan):
         command = []
         command += ["nmap"]
         command += ["-sU"]
-        command = self.addCommandPorts(command,self.ports)
+        command = self.addCommandPorts(command, self.ports)
         #no funciona con script del sistema, solo con path parcial
         command += ["--script=ntp-info"]
         command += [self.network]
@@ -35,24 +35,19 @@ class NtpInfo(Scan):
         return command + ["-p "+','.join(ports)]
 
     def isVulnerable(self, port, host):
-        r = False
-        try:
+        if isinstance(port, dict):
             script = port.get('script', 'Not vulnerable')
-            if type(script['elem']) == type([]):
-                # More than 1 element, otherwise be a {}
-                r = True
-        except:
-            r = False
-        return r
-
-    def getParsedEvidence(self, port, host):
-        result = port.get('script', '')
-        if not result:
-            raise Exception ("Cannot parse evidence as ntpinforeadvar")
-        return result
+            if isinstance(script, dict):
+                output = script.get('output', 'Not vulnerable')
+                if isinstance(output, str):
+                    return True
+        return False
 
     def prepareOutput(self, data):
-        return self.parseAsNmapScript(data)
+        return self.parseAsNmapScript(data) 
+        
+    def getParsedEvidence(self, service, host):
+        return {'timestamp':str(self._id.generation_time), 'service': service, 'evidence':port['script']['output']}
 
     def getDefaultPorts(self):
         return ["123"]

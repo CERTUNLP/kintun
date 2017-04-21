@@ -329,12 +329,12 @@ class Scan:
             elif out in ["csv-nap"]:
                 hosts = self.sendToCsvService(endpointsconf[out])
             else:
-                hosts = [self.toJson()]
+                hosts = self.result['vulnerables']
                 headers = {'Accept' : '*/*', 'Expect': '100-continue'}
                 for h in hosts:
                     evidence = self.getEvidenceReport(h['evidence'])
                     files = {'evidence_file': ("evidence.txt", evidence, 'text/plain', {'Expires': '0'})}
-                    response = requests.post(url, data=h['data'], headers=headers, files=files, verify=False)
+                    response = requests.post(url, data=evidence, headers=headers, files=files, verify=False)
                     print(str(response)+str(response.text))
 
 
@@ -438,7 +438,7 @@ class Scan:
         pass
     def addCommandPorts(self, command, ports):
         pass
-    def prepareOutput(self, out, errors):
+    def prepareOutput(self, data):
         pass
     def getDefaultPorts(self):
         pass
