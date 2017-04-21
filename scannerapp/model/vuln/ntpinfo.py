@@ -45,6 +45,17 @@ class NtpInfo(Scan):
 
     def prepareOutput(self, data):
         return self.parseAsNmapScript(data) 
+    
+    def getIterableNmapHosts(self, script):
+        # can be an empty nmap report
+        hosts = []
+        try:
+            hosts = script['nmaprun']['host']
+        except:
+            return hosts
+        if type(hosts) != type([]):
+            hosts = [hosts]
+        return hosts
         
     def getParsedEvidence(self, service, host):
         return {'timestamp':str(self._id.generation_time), 'service': service, 'evidence':port['script']['output']}
