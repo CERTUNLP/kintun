@@ -39,7 +39,9 @@ class NtpInfo(Scan):
             script = port.get('script', 'Not vulnerable')
             if isinstance(script, dict):
                 output = script.get('output', 'Not vulnerable')
-                if isinstance(output, str):
+                elem = script.get('elem', 'Not vulnerable')
+                if isinstance(output, str) and isinstance(elem, list) and len(elem) > 2:
+                    print('VULNERABLE')
                     return True
         return False
 
