@@ -99,6 +99,10 @@ def get_scans():
     alls = [make_public_scan(scan) for scan in db.scans.find()]
     return jsonify({"scans":alls, "count":len(alls)})
 
+@app.route('/api/', methods=['GET'])
+def get_info():
+    return jsonify({"name":'Kintun Scan API', "version":'0.1'})
+
 @app.route('/api/report/<scan_id>', methods=['GET'])
 def report():
     s = db.scans.find()

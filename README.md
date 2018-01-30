@@ -23,8 +23,29 @@ Requires:
 - NMap +7.3 (https://launchpad.net/~pi-rho/+archive/ubuntu/security)
 - SSL Python Support
 - Expect
+- Perl
 - Shelldap
 - This proyect!
+
+----
+How to install Perl Modules: (but I recomend use apt install shelldap)
+
+    ```
+    #perl -MCPAN -e shell
+    cpan> install Term::ReadKey
+    cpan> install Term::Shell
+    ```
+
+or:
+    ```
+    perl -MCPAN -e 'install +Term::ReadKey'
+    perl -MCPAN -e 'install +Term::ReadLine'
+    perl -MCPAN -e 'install +Term::Shell'
+    perl -MCPAN -e 'install +Net::LDAP'
+    perl -MCPAN -e 'install +YAML::Syck'
+    sudo apt-get install libterm-readline-gnu-perl
+    ```
+
 
 -----------
 
