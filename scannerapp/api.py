@@ -33,7 +33,7 @@ def not_found(error):
         }), 404)
 
 @app.errorhandler(400)
-def not_found(error):
+def bad_request(error):
     return make_response(jsonify({
         'error': 'Bad Request',
         'error_type':'400',
@@ -60,29 +60,31 @@ def create_scan():
 
 @app.route('/api/scans/<scan_id>', methods=['PUT'])
 def update_scan(scan_id):
-    s = [scan for scan in scans if scan['id'] == scan_id]
+    ### TODO: Reimplement
+    s = [scan for scan in [] if scan['id'] == scan_id]
     if len(s) == 0:
         abort(404)
     if not request.json:
         abort(400)
-    if 'title' in request.json and type(request.json['title']) != unicode:
+    if 'title' in request.json:# and type(request.json['title']) != unicode:
         abort(400)
-    if 'description' in request.json and type(request.json['description']) is not unicode:
+    if 'description' in request.json:# and type(request.json['description']) is not unicode:
         abort(400)
     if 'done' in request.json and type(request.json['done']) is not bool:
         abort(400)
     s[0]['title'] = request.json.get('title', s[0]['title'])
     s[0]['description'] = request.json.get('description', s[0]['description'])
     s[0]['done'] = request.json.get('done', s[0]['done'])
-    return jsonify({'scan': s[0]})
+    return jsonify({'result': "Not implemented yet."})
 
 @app.route('/api/scans/<scan_id>', methods=['DELETE'])
 def delete_scan(scan_id):
-    s = [scan for scan in scans if scan['id'] == scan_id]
+    ### TODO: Reimplement
+    s = [scan for scan in [] if scan['id'] == scan_id]
     if len(s) == 0:
         abort(404)
-    scans.remove(s[0])
-    return jsonify({'result': True})
+    #scans.remove(s[0])
+    return jsonify({'result': "Not implemented yet."})
 
 def make_public_scan(scan):
     new_scan = {}

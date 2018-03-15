@@ -444,6 +444,8 @@ class Scan:
         pass
     def getTypeNGEN(self):
         pass
+    def getPortType(self):
+        pass
 
 ####### DB-USE #######
     def save(self, db=None):
@@ -487,7 +489,7 @@ class Scan:
                 vulnerability=self.vulnerability
             )
 
-    def toDefaultDict():
+    def toDefaultDict(self):
         return self.__dict__
 
 

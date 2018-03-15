@@ -10,6 +10,7 @@
 import json
 from pprint import pprint
 import logging
+from logging.handlers import TimedRotatingFileHandler
 import sys, os
 from pymongo import MongoClient
 from send_mail import MailLog
@@ -44,13 +45,22 @@ logger.setLevel(logging.DEBUG)
 # create stdout handler with a higher log level
 sh = logging.StreamHandler(sys.stdout)
 sh.setLevel(logging.DEBUG)
+log_path = logconf["folder"]+'/'
 
 # create stdout_file handler whiefh logs even debug messages
-sfh = logging.FileHandler(logconf['stdout']['name'])
+sfh = TimedRotatingFileHandler(
+            log_path+logconf['stdout']['name'], 
+            when="W0",
+            interval=1,
+            backupCount=5)
 sfh.setLevel(logging.DEBUG)
 
 # create file handler with a higher log level
-efh = logging.FileHandler(logconf['error']['name'])
+efh = TimedRotatingFileHandler(
+            log_path+logconf['error']['name'],
+            when="W0",
+            interval=1,
+            backupCount=5)
 efh.setLevel(logging.ERROR)
 
 # create formatter and add it to the handlers
