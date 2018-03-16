@@ -80,6 +80,7 @@ class Scan:
         return self.network.split('/')[0]
 
     def start(self):
+        logger.info("Iniciando Scan '"+self.getNameId()+"' creado por: "+self.origin)
         thr = threading.Thread(target=self.__run, args=(), kwargs={})
         logger.info("Procesos activos: "+str(threading.active_count()))
         thr.start() # will run "__run"
@@ -533,7 +534,7 @@ class Scan:
         if type(o) != list: raise Exception("Outputs must be a list")
         for endpoint in o:
             if not endpoint in list(endpointsconf.keys()):
-                raise Exception("Bad endpoints")
+                raise Exception("Bad endpoints/outputs. Endpoints must be one or more of ['"+str("', '".join(endpointsconf.keys()))+"'].")
         self._outputs = o
 
     @property
@@ -553,7 +554,6 @@ class Scan:
 
     @origin.setter
     def origin(self, ip):
-        print(ip)
         if not self.isEnabledExternal() and ip != '127.0.0.1':
             raise Exception("This scan is only enabled for localhost.")
         self._origin = ip

@@ -44,7 +44,7 @@ def bad_request(error):
 def create_scan():
     rj = request.json
     if not rj or not 'network' or not 'params' or not 'outputs' or not 'vuln' in rj:
-        abort(400,"Parametros incorrectos")
+        abort(400,"Parametros incorrectos. Requiere 'network', 'params', 'outputs' y 'vuln'")
     try:
         s = Scan.get_scans()[rj['vuln']](
                 network=rj['network'],
