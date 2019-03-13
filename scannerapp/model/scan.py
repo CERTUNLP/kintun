@@ -347,7 +347,7 @@ class Scan:
         for host in self.result['vulnerables']:
             h = {'data':dict(
                     type = self.getTypeNGEN(),
-                    hostAddress = host['address'],
+                    ip_v4 = host['address'],
                     feed = feed
                 ),
                 'evidence': host['evidence']
