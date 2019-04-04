@@ -331,7 +331,7 @@ class Scan:
                 hosts = self.sendToCsvService(endpointsconf[out])
             else:
                 hosts = self.result['vulnerables']
-                headers = {'Accept' : '*/*', 'Expect': '100-continue'}
+                headers = {}#{'Accept' : '*/*', 'Expect': '100-continue'}
                 for h in hosts:
                     evidence = self.getEvidenceReport(h['evidence'])
                     files = {'evidence_file': ("evidence.txt", evidence, 'text/plain', {'Expires': '0'})}
@@ -347,7 +347,7 @@ class Scan:
         for host in self.result['vulnerables']:
             h = {'data':dict(
                     type = self.getTypeNGEN(),
-                    ip_v4 = host['address'],
+                    address = host['address'],
                     feed = feed
                 ),
                 'evidence': host['evidence']
