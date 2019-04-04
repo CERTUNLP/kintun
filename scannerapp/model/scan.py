@@ -335,7 +335,7 @@ class Scan:
                 for h in hosts:
                     evidence = self.getEvidenceReport(h['evidence'])
                     files = {'evidence_file': ("evidence.txt", evidence, 'text/plain', {'Expires': '0'})}
-                    response = requests.post(url, data=evidence, headers=headers, files=files, verify=False)
+                    response = requests.post(url, data=h['data'], headers=headers, files=files, verify=False)
                     print(str(response)+str(response.text))
 
 
