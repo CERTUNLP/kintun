@@ -1,6 +1,7 @@
 # Local Data
 scan-output-*
 outputs/*
+logs/*
 config.json
 
 # Certificates

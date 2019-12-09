@@ -1,0 +1,9 @@
+<!doctype html>
+
+
+{# all_links.html #}
+<ul>
+{% for rule in rules %}
+<li><a href="/view{{ rule.rule }}">{{ rule }}</a></li>
+{% endfor %}
+</ul>

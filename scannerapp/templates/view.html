@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+<head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+</head>
+<body>
+{# all_links.html #}
+{{ rule }}
+
+{% for arg in rule.arguments %}
+  {{ arg }}<input type="text" name="{{ arg }}" id="{{ arg }}"><br>
+{% endfor %}
+
+<form action="{{ rule.rule }}" method="{{ method }}" id="action">
+  <input type="submit" value="submit" id="send">
+</form>
+
+<script>
+  $("#send").click(function(){
+      var new_rule = "{{ rule.rule }}";
+    {% for arg in rule.arguments %}
+      new_rule = new_rule.replace("&lt;{{ arg }}&gt;", $("#{{ arg }}").val());
+    {% endfor %}
+      $("#action").attr("action", new_rule);
+      $.ajax({
+        url: new_rule,
+        type: "{{ method }}"
+      });
+
+  });
+
+
+</script>
+</body>
+</html>

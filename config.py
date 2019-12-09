@@ -11,13 +11,18 @@ import json
 from pprint import pprint
 import logging
 from logging.handlers import TimedRotatingFileHandler
-import sys, os
+import sys
+import os
 from pymongo import MongoClient
 from send_mail import MailLog
 
 ################################################################
 ############################ CONFIG ############################
 ################################################################
+
+base_path = os.path.dirname(os.path.abspath(__file__))
+
+os.chdir(base_path)
 
 with open('config.json') as json_data_file:
     conf = json.load(json_data_file)
@@ -49,22 +54,23 @@ log_path = logconf["folder"]+'/'
 
 # create stdout_file handler whiefh logs even debug messages
 sfh = TimedRotatingFileHandler(
-            log_path+logconf['stdout']['name'], 
-            when="W0",
-            interval=1,
-            backupCount=5)
+    log_path+logconf['stdout']['name'],
+    when="W0",
+    interval=1,
+    backupCount=5)
 sfh.setLevel(logging.DEBUG)
 
 # create file handler with a higher log level
 efh = TimedRotatingFileHandler(
-            log_path+logconf['error']['name'],
-            when="W0",
-            interval=1,
-            backupCount=5)
+    log_path+logconf['error']['name'],
+    when="W0",
+    interval=1,
+    backupCount=5)
 efh.setLevel(logging.ERROR)
 
 # create formatter and add it to the handlers
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s: %(message)s')
+formatter = logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s: %(message)s')
 sh.setFormatter(formatter)
 sfh.setFormatter(formatter)
 efh.setFormatter(formatter)
