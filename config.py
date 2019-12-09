@@ -24,7 +24,9 @@ base_path = os.path.dirname(os.path.abspath(__file__))
 
 os.chdir(base_path)
 
-with open('config.json') as json_data_file:
+print(base_path)
+
+with open('config.json', encoding='utf-8') as json_data_file:
     conf = json.load(json_data_file)
 
 dbdriver = conf['databases']['driver']

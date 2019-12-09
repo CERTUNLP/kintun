@@ -9,7 +9,7 @@
 #
 
 log_user 1
-spawn timeout 5 ./[lindex $argv 0] -h [lindex $argv 1] --tls
+spawn timeout 5 [lindex $argv 0] -h [lindex $argv 1] --tls
 
 expect {
   "* > " { send "whoami\n" }
