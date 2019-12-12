@@ -93,20 +93,6 @@ class data:
         self.__dict__.update(kwargs)
 
 
-@app.route("/test", methods=['GET'])
-def test():
-    r = request
-    global request
-    request = data(json={
-        'network': "127.0.0.1",
-        'params': "ccc",
-        'outputs': [],
-        'vuln': "netbios",
-        'ports': []
-    }, remote_addr=r.remote_addr)
-    return create_scan()
-
-
 @app.route("/view/<method>/<path:api>", methods=['GET'])
 def view(method, api):
     api = '/'+api
