@@ -234,8 +234,8 @@ class Scan:
         return False
 
     def getParsedEvidence(self, port, host):
-        #print("base evidence")
-        result = host.get('script', '')
+        # print("base evidence")
+        result = port.get('script', '')
         if not result:
             raise Exception ("Cannot parse evidence as default")
         return result
@@ -451,13 +451,13 @@ class Scan:
 ####### DB-USE #######
     def save(self, db=None):
         if not db:
-            client = MongoClient(dbconf['host'], dbconf['port'])
+            client = MongoClient(dbconf['host'], dbconf['port'],username=dbconf['user'], password=dbconf['password'])
             db = client[dbconf['db']]
         if not self._id:
             self._id = ObjectId()
-        db.scans.update(
+        db.scans.update_one(
                 { "_id": self._id },
-                self.__dict__,
+                { "$set": self.__dict__ },
                 upsert=True
             )
         #return db.insert_one(self.toDict()).inserted_id

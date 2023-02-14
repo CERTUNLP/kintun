@@ -1,21 +1,26 @@
+# Flask
+# # Jinja2
+# MarkupSafe
+# Werkzeug
+# cffi
+# chardet
+# click
+# colorama
+# cryptography
+# html5lib
+# idna
+# itsdangerous
+# pyOpenSSL
+# pyasn1
+# pycparser
+# # pycrypto
+# pymongo
+# requests
+# six
+# urllib3
+# wheel
+
 Flask
-Jinja2
-MarkupSafe
-Werkzeug
-cffi
-chardet
-click
-colorama
-cryptography
-html5lib
-idna
-itsdangerous
-pyOpenSSL
-pyasn1
-pycparser
-pycrypto
 pymongo
 requests
-six
-urllib3
-wheel
+gnupg

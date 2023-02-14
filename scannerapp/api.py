@@ -11,105 +11,17 @@
 from . import app
 from .model.vuln import *
 from .model.scan import Scan
+from config import logger
 
-from flask import jsonify, abort, make_response, request, url_for, render_template
+from flask import jsonify, abort, make_response, request, url_for, redirect
 from bson.objectid import ObjectId
 
 from config import db
-import json
-from pprint import pprint
 
 
-@app.route('/hello/')
-@app.route('/hello/<name>')
-def hello(name=None):
-    return render_template('hello.html', name=name)
-
-
-@app.route('/mqv/<file>')
-def mqv(file=None):
-    return render_template(file, file=file)
-
-
-@app.route('/print')
-def pp(name=None):
-    return render_template('hello.html', name=app.view_functions)
-
-
-@app.route('/print2')
-def pp2(name=None):
-    s = ""
-    for x in app.url_map.iter_rules():
-        s += str(dir(x))
-    return render_template('hello.html', name=dir(list(app.url_map.iter_rules())[0]))
-
-
-@app.route('/print3')
-def pp3(name=None):
-    return render_template('hello.html', name=list(app.url_map.iter_rules())[0])
-
-
-def rules():
-    f = []
-    rules = sorted(list(app.url_map.iter_rules()), key=lambda k: k.rule)
-    for r in rules:
-        f.append({
-            # 'suitable_for': str(r.suitable_for),
-            # 'subdomain': r.subdomain,
-            # 'alias': r.alias,
-            # 'host': r.host,
-            'rule': r.rule,
-            'arguments': list(r.arguments),
-            'methods': r.methods,
-            'endpoint': r.endpoint,
-            'postargs': app.view_functions[r.endpoint].__doc__
-        })
-    return f
-
-
-@app.route('/views')
-def pp4():
-    pprint(rules())
-    return render_template('rules.html', rules=rules())
-
-
-# site map
-
-
-@app.route("/")
-@app.route("/all-links")
-def all_links():
-    links = []
-    for rule in app.url_map.iter_rules():
-        if len(rule.defaults or {}) >= len(rule.arguments or {}):
-            url = url_for(rule.endpoint, **(rule.defaults or {}))
-            links.append((url, rule.endpoint))
-    print(links)
-    return render_template("hello.html", links=links)
-
-
-class data:
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
-
-
-@app.route("/view/<method>/<path:api>", methods=['GET'])
-def view(method, api):
-    api = '/'+api
-    print(rules())
-    print(api)
-    rule = next((r for r in rules() if r['rule'] == api), None)
-    return render_template("view.html", method=method, rule=rule)
-    # return(api)
-
-
-# @app.route("/view/<path:api>", methods=['POST'])
-# def view_post(api):
-#     # rules = rules()
-#     return render_template("hello.html", name=api)
-
-# previo
-
+@app.route('/', methods=['GET'])
+def get_root():
+    return redirect(url_for('get_api_root'))
 
 @app.route('/api/scan/<scan_id>', methods=['GET'])
 def get_scan(scan_id):
@@ -157,7 +69,8 @@ def create_scan():
             origin=request.remote_addr)
         s.start()
     except Exception as err:
-        abort(400, err.args)
+        raise err
+        # abort(400, err.args)
     # scan.save(db)
     return jsonify(make_public_scan(s.toDict())), 201
 
@@ -168,12 +81,12 @@ def update_scan(scan_id):
     s = [scan for scan in [] if scan['id'] == scan_id]
     if len(s) == 0:
         abort(404)
-    if not request.json:
+    if not request.data:
         abort(400)
-    if 'title' in request.json:  # and type(request.json['title']) != unicode:
+    if 'title' in request.data:  # and type(request.json['title']) != unicode:
         abort(400)
     # and type(request.json['description']) is not unicode:
-    if 'description' in request.json:
+    if 'description' in request.data:
         abort(400)
     if 'done' in request.json and type(request.json['done']) is not bool:
         abort(400)
@@ -212,7 +125,7 @@ def get_scans():
 
 
 @app.route('/api/', methods=['GET'])
-def get_info():
+def get_api_root():
     return jsonify({"name": 'Kintun Scan API', "version": '0.1'})
 
 
@@ -222,14 +135,20 @@ def report():
     return jsonify({'scans': [make_public_scan(scan) for scan in s]})
 
 
-@app.route('/api/print', methods=['POST'])
+@app.route('/api/print', methods=['POST','GET'])
 def print_something():
     print("Imprimiendo request recibida: ")
-    if not request.json:
+    print(request.args)
+
+    # print(request.args)
+    # print(request.form)
+    # print(request.files)
+    # print(request.values)
+    # print(request.json)
+    print(request.data)
+    # request.json intenta convertir automaticamente a json y si no puede da un error poco descriptivo
+    if not request.data:
         abort(400, "Parametros incorrectos, no hay json")
     print(request.json)
     return jsonify(request.json), 201
 
-# if __name__ == '__main__':
-    # app.run(debug=True,host="0.0.0.0")
-#    app.run(host="0.0.0.0", debug = True, ssl_context=context)

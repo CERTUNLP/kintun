@@ -36,9 +36,9 @@ class DnsRecursiveExternal(Scan):
     def execute(self):
         try:
             net = self.network.split('/')[0]
-            r = requests.get('http://openresolver.com/?ip={0}'.format(net))
+            r = requests.get('https://openresolver.com/?ip={0}'.format(net))
             if r.status_code != 200:
-                raise Exception('OpenResolver openresolver.com is not working correctly.')
+                raise Exception(f'OpenResolver openresolver.com is not working correctly. Response was: {r.status_code}. Texto: {r.text}')
             return bytes(r.text,'utf-8'), b''
         except Exception as e:
             return b'', bytes(str(datetime.datetime.now())+'Error in connection with OpenResolver openresolver.com'+str(sys.exc_info()[1]),'utf-8')
@@ -51,9 +51,9 @@ class DnsRecursiveExternal(Scan):
         notv = []
         net = self.getAddress()
         if self.isVulnerable(response):
-            v.append({"address":net,"ports":self.getDefaultPorts(),"evidence":'http://openresolver.com/?ip={0}'.format(net)})
+            v.append({"address":net,"ports":self.getDefaultPorts(),"evidence":'https://openresolver.com/?ip={0}'.format(net)})
         else:
-            notv.append({"address":net,"ports":self.getDefaultPorts(),"evidence":'http://openresolver.com/?ip={0}'.format(net)})
+            notv.append({"address":net,"ports":self.getDefaultPorts(),"evidence":'https://openresolver.com/?ip={0}'.format(net)})
         return {"vulnerables":v, "no_vulnerables":notv}
 
     def isVulnerable(self, response):

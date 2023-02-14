@@ -97,7 +97,8 @@ if not os.path.exists(scanconf["folder_output"]):
 ############################ DATABASE ##########################
 ################################################################
 
-client = MongoClient(dbconf['host'], dbconf['port'])
+print(dbconf['user'], dbconf['password'])
+client = MongoClient(dbconf['host'], dbconf['port'], username=dbconf['user'], password=dbconf['password'])
 db = client[dbconf['db']]
 scans = db.scans
 
