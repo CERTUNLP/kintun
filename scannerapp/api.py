@@ -19,11 +19,12 @@ from bson.objectid import ObjectId
 from config import db
 
 
-@app.route('/', methods=['GET'])
+@app.route("/", methods=["GET"])
 def get_root():
-    return redirect(url_for('get_api_root'))
+    return redirect(url_for("get_api_root"))
 
-@app.route('/api/scan/<scan_id>', methods=['GET'])
+
+@app.route("/api/scan/<scan_id>", methods=["GET"])
 def get_scan(scan_id):
     x = Scan.get(scan_id, db)
     return jsonify(make_public_scan(x.toDict()))
@@ -32,22 +33,24 @@ def get_scan(scan_id):
 
 @app.errorhandler(404)
 def not_found(error):
-    return make_response(jsonify({
-        'error': 'Not found',
-        'error_type': '404'
-    }), 404)
+    return make_response(jsonify({"error": "Not found", "error_type": "404"}), 404)
 
 
 @app.errorhandler(400)
 def bad_request(error):
-    return make_response(jsonify({
-        'error': 'Bad Request',
-        'error_type': '400',
-        'error_descriptions': error.description
-    }), 400)
+    return make_response(
+        jsonify(
+            {
+                "error": "Bad Request",
+                "error_type": "400",
+                "error_descriptions": error.description,
+            }
+        ),
+        400,
+    )
 
 
-@app.route('/api/scan', methods=['POST'])
+@app.route("/api/scan", methods=["POST"])
 def create_scan():
     """
     network:
@@ -57,16 +60,26 @@ def create_scan():
     ports:
     """
     rj = request.json
-    if not rj or not 'network' or not 'params' or not 'outputs' or not 'vuln' or not 'ports' in rj:
+    if (
+        not rj
+        or not "network"
+        or not "params"
+        or not "outputs"
+        or not "vuln"
+        or not "ports" in rj
+    ):
         abort(
-            400, "Parametros incorrectos. Requiere 'network', 'params', 'outputs', 'ports' y 'vuln'")
+            400,
+            "Parametros incorrectos. Requiere 'network', 'params', 'outputs', 'ports' y 'vuln'",
+        )
     try:
-        s = Scan.get_scans()[rj['vuln']](
-            network=rj['network'],
-            ports=rj['ports'],
-            params=rj['params'],
-            outputs=rj['outputs'],
-            origin=request.remote_addr)
+        s = Scan.get_scans()[rj["vuln"]](
+            network=rj["network"],
+            ports=rj["ports"],
+            params=rj["params"],
+            outputs=rj["outputs"],
+            origin=request.remote_addr,
+        )
         s.start()
     except Exception as err:
         raise err
@@ -75,67 +88,106 @@ def create_scan():
     return jsonify(make_public_scan(s.toDict())), 201
 
 
-@app.route('/api/scans/<scan_id>', methods=['PUT'])
+@app.route("/api/scan_now", methods=["POST"])
+def create_scan():
+    """
+    network:
+    params:
+    outputs:
+    vuln:
+    ports:
+    """
+    rj = request.json
+    if (
+        not rj
+        or not "network"
+        or not "params"
+        or not "outputs"
+        or not "vuln"
+        or not "ports" in rj
+    ):
+        abort(
+            400,
+            "Parametros incorrectos. Requiere 'network', 'params', 'outputs', 'ports' y 'vuln'",
+        )
+    try:
+        s = Scan.get_scans()[rj["vuln"]](
+            network=rj["network"],
+            ports=rj["ports"],
+            params=rj["params"],
+            outputs=rj["outputs"],
+            origin=request.remote_addr,
+        )
+        s.start(preemptive=True)
+    except Exception as err:
+        raise err
+        # abort(400, err.args)
+    # scan.save(db)
+    return jsonify(make_public_scan(s.toDict())), 201
+
+
+@app.route("/api/scans/<scan_id>", methods=["PUT"])
 def update_scan(scan_id):
     # TODO: Reimplement
-    s = [scan for scan in [] if scan['id'] == scan_id]
+    s = [scan for scan in [] if scan["id"] == scan_id]
     if len(s) == 0:
         abort(404)
     if not request.data:
         abort(400)
-    if 'title' in request.data:  # and type(request.json['title']) != unicode:
+    if "title" in request.data:  # and type(request.json['title']) != unicode:
         abort(400)
     # and type(request.json['description']) is not unicode:
-    if 'description' in request.data:
+    if "description" in request.data:
         abort(400)
-    if 'done' in request.json and type(request.json['done']) is not bool:
+    if "done" in request.json and type(request.json["done"]) is not bool:
         abort(400)
-    s[0]['title'] = request.json.get('title', s[0]['title'])
-    s[0]['description'] = request.json.get('description', s[0]['description'])
-    s[0]['done'] = request.json.get('done', s[0]['done'])
-    return jsonify({'result': "Not implemented yet."})
+    s[0]["title"] = request.json.get("title", s[0]["title"])
+    s[0]["description"] = request.json.get("description", s[0]["description"])
+    s[0]["done"] = request.json.get("done", s[0]["done"])
+    return jsonify({"result": "Not implemented yet."})
 
 
-@app.route('/api/scans/<scan_id>', methods=['DELETE'])
+@app.route("/api/scans/<scan_id>", methods=["DELETE"])
 def delete_scan(scan_id):
     # TODO: Reimplement
-    s = [scan for scan in [] if scan['id'] == scan_id]
+    s = [scan for scan in [] if scan["id"] == scan_id]
     if len(s) == 0:
         abort(404)
     # scans.remove(s[0])
-    return jsonify({'result': "Not implemented yet."})
+    return jsonify({"result": "Not implemented yet."})
 
 
 def make_public_scan(scan):
     new_scan = {}
     for field in scan:
-        if field == '_id':
-            new_scan['uri'] = url_for(
-                'get_scan', scan_id=str(scan['_id']), _external=True)
+        if field == "_id":
+            new_scan["uri"] = url_for(
+                "get_scan", scan_id=str(scan["_id"]), _external=True
+            )
             new_scan[field] = str(scan[field])
         else:
             new_scan[field] = scan[field]
     return new_scan
 
 
-@app.route('/api/scans', methods=['GET'])
+@app.route("/api/scans", methods=["GET"])
 def get_scans():
     alls = [make_public_scan(scan) for scan in db.scans.find()]
     return jsonify({"scans": alls, "count": len(alls)})
 
 
-@app.route('/api/', methods=['GET'])
+@app.route("/api/", methods=["GET"])
 def get_api_root():
-    return jsonify({"name": 'Kintun Scan API', "version": '0.1'})
+    return jsonify({"name": "Kintun Scan API", "version": "0.1"})
 
 
-@app.route('/api/report/<scan_id>', methods=['GET'])
+@app.route("/api/report/<scan_id>", methods=["GET"])
 def report():
     s = db.scans.find()
-    return jsonify({'scans': [make_public_scan(scan) for scan in s]})
+    return jsonify({"scans": [make_public_scan(scan) for scan in s]})
 
 
-@app.route('/api/print', methods=['POST','GET'])
+@app.route("/api/print", methods=["POST", "GET"])
 def print_something():
     print("Imprimiendo request recibida: ")
     print(request.args)
@@ -151,4 +203,3 @@ def print_something():
         abort(400, "Parametros incorrectos, no hay json")
     print(request.json)
     return jsonify(request.json), 201
-
