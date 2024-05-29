@@ -51,6 +51,7 @@ class Scan:
         self.errors = []
         self.output_files = []
         self.vulnerability = self.__class__.name
+        self.is_saved = True
 
     def __init__(self, kwargs, kwargs2):
         self.__setDefaults()
@@ -514,6 +515,8 @@ class Scan:
 
     ####### DB-USE #######
     def save(self, db=None):
+        if not self.is_saved:
+            return None
         if not db:
             client = MongoClient(
                 dbconf["host"],
