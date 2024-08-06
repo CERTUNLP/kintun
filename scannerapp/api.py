@@ -26,8 +26,12 @@ def get_root():
 
 @app.route("/api/scan/<scan_id>", methods=["GET"])
 def get_scan(scan_id):
-    x = Scan.get(scan_id, db)
-    return jsonify(make_public_scan(x.toDict()))
+    try: 
+        x = Scan.get(scan_id, db)
+        return jsonify(make_public_scan(x.toDict()))
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return jsonify({"error": "Scan not found", "error_type": "404"}), 404
     # return x.toJson()
 
 
@@ -48,6 +52,38 @@ def bad_request(error):
         ),
         400,
     )
+
+@app.route("/api/scanV2", methods=["POST"])
+def create_scan_v2():
+    """
+    network:
+    params:
+    outputs:
+    vuln:
+    ports:
+    """
+    rj = request.json
+    if (
+        not rj
+        or not "network"
+        or not "ports" in rj
+    ):
+        abort(
+            400,
+            "Parametros incorrectos. Requiere 'network', 'params', 'outputs', 'ports' y 'vuln'",
+        )
+    try:
+        s = Scan.get_scans()["general"](
+            network=rj["network"],
+            ports=rj["ports"],
+            origin=request.remote_addr,
+        )
+        s.start()
+    except Exception as err:
+        raise err
+        # abort(400, err.args)
+    s.save(db)
+    return jsonify(make_public_scan(s.toDict())), 201
 
 
 @app.route("/api/scan", methods=["POST"])
@@ -84,12 +120,12 @@ def create_scan():
     except Exception as err:
         raise err
         # abort(400, err.args)
-    # scan.save(db)
+    #s.save(db)
     return jsonify(make_public_scan(s.toDict())), 201
 
 
 @app.route("/api/scan_now", methods=["POST"])
-def create_scan():
+def create_scan_now():
     """
     network:
     params:
@@ -122,7 +158,7 @@ def create_scan():
     except Exception as err:
         raise err
         # abort(400, err.args)
-    # scan.save(db)
+    s.save(db)
     return jsonify(make_public_scan(s.toDict())), 201
 
 
@@ -182,7 +218,7 @@ def get_api_root():
 
 
 @app.route("/api/report/<scan_id>", methods=["GET"])
-def report():
+def report(scan_id):
     s = db.scans.find()
     return jsonify({"scans": [make_public_scan(scan) for scan in s]})
 

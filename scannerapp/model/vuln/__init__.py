@@ -11,6 +11,7 @@ __all__ = [
     "dnsrecursive",
     "dnszonetransfer",
     "dnsrecursiveexternal",
+    "general",
     "heartbleed",
     "httpgooglemalware",
     "httpopenproxy",

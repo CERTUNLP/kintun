@@ -20,6 +20,7 @@ from flask import jsonify
 from bson.objectid import ObjectId
 from pymongo import MongoClient
 import requests
+import re
 
 import json
 import pprint
@@ -132,8 +133,14 @@ class Scan:
     def getOutputJsonFileName(self):
         return self.__addOutputFile(".json")
 
+    def getOutputTxtFileName(self):
+        return self.__addOutputFile(".txt")
+
     def getOutputXmlFilePathName(self):
         return self.relativeOutputFilePrefix() + self.getOutputXmlFileName()
+
+    def getOutputTxtFilePathName(self):
+        return self.relativeOutputFilePrefix() + self.getOutputTxtFileName()
 
     def getOutputJsonFilePath(self):
         return self.relativeOutputFilePrefix() + self.getOutputJsonFileName()
@@ -143,8 +150,14 @@ class Scan:
             self.__addOutputFile(ext)
         return self.getOutputFileName()
 
+    def getOutputNmapTxtFileName(self):
+        return self.__addOutputFile(".txt")
+
     def getOutputNmapAllFilePathName(self):
         return self.relativeOutputFilePrefix() + self.getOutputNmapAllFileName()
+
+    def getOutputNmapTxtFilePathName(self):
+        return self.relativeOutputFilePrefix() + self.getOutputNmapTxtFileName()
 
     def __addOutputFile(self, extension=""):
         name = self.getOutputFileName() + extension
@@ -179,7 +192,8 @@ class Scan:
                 )
                 raise e
             try:
-                data = self.loadOutput(out)
+                data = out
+                #data = self.loadOutput(out)
             except Exception as e:
                 self.errors.append(
                     str(datetime.datetime.now())
@@ -240,6 +254,9 @@ class Scan:
     def loadOutput(self, output):
         return self.loadXmlAsJson(self.getOutputXmlFilePathName())
 
+    def loadOutputTxt(self, output):
+        return self.loadTxt(self.getOutputTxtFilePathName())
+
     def getIterableNmapHosts(self, script):
         hosts = []
         try:
@@ -260,6 +277,38 @@ class Scan:
             # raise Exception ("Cannot get info about scan ports. Maybe wrong parsed output")
             pass
         if type(ports) != type([]):
+            ports = [ports]
+        return ports
+
+
+    def getIterableNmapHostsTxt(self, script):
+        hosts = []
+        try:
+            host_pattern = re.compile(r'Nmap scan report for .* \((\d+\.\d+\.\d+\.\d+)\)')
+            hosts = host_pattern.findall(script)
+        except Exception as e:
+            raise Exception(
+                "Cannot get info about scan hosts. Maybe wrong parsed output"
+            )
+        if type(hosts) != type([]):
+            hosts = [hosts]
+        return hosts
+
+    def getIterablePossibleNmapPortsTxt(self, script, host):
+        ports = []
+        try:
+            host_section_pattern = re.compile(r'Nmap scan report for .* \(' + re.escape(host) + r'\)\n(.*?)(?=Nmap scan report for |\Z)', re.DOTALL)
+            host_section = host_section_pattern.findall(script)
+            if host_section:
+                host_section = host_section[0]
+                port_pattern = re.compile(r'(\d+)/(tcp|udp)\s+(open|filtered|closed)\s+(\S+)')
+                ports = port_pattern.findall(host_section)
+                ports = [{"portid": port[0], "protocol": port[1], "state": port[2], "service": port[3]} for port in ports]
+        except Exception as e:
+            print(e)
+            pass
+        
+        if type(ports) != list:
             ports = [ports]
         return ports
 
@@ -314,6 +363,37 @@ class Scan:
                     {"address": ipv4, "ports": pvulnerables, "evidence": evidences}
                 )
             # notv.append({"address":host['address']['addr'],"ports":pnot_vulnerables})
+        return {"vulnerables": v, "no_vulnerables": notv}
+
+    def parseAsStandardOutput(self, data):
+        v = []
+        notv = []
+        hosts = self.getIterableNmapHostsTxt(data)
+        for host in hosts:
+            services = self.getIterablePossibleNmapPortsTxt(data, host)
+            pvulnerables = []
+            pnot_vulnerables = []
+            evidences = []
+            evidence = "None"
+            for port in services:
+                if (port["state"] == "open"):
+                    pvulnerables.append(port["portid"])
+                    try:
+                        evidences.append(f"Servicio: {port['service']} en estado: {port['state']}")
+                    except Exception as e:
+                        self.errors.append(
+                            str(datetime.datetime.now())
+                            + " - Cant get evidence:  "
+                            + str(e)
+                        )
+                else:
+                    pnot_vulnerables.append(port["portid"])
+            if pvulnerables:
+                v.append(
+                    {"address": host, "ports": pvulnerables, "evidence": evidences}
+                )
+            if pnot_vulnerables:
+                notv.append({"address": host, "ports": pnot_vulnerables})
         return {"vulnerables": v, "no_vulnerables": notv}
 
     # def printKeyVals(self, data, indent=0):
@@ -517,7 +597,7 @@ class Scan:
     def save(self, db=None):
         if not self.is_saved:
             return None
-        if not db:
+        if db == None:
             client = MongoClient(
                 dbconf["host"],
                 dbconf["port"],
