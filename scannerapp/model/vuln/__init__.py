@@ -28,4 +28,5 @@ __all__ = [
     "snmp",
     "snmpsysdescr",
     "socksopenproxy",
+    "web",
 ]

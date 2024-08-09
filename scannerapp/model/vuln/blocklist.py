@@ -9,8 +9,8 @@
 
 from ..scan import Scan
 
-class General(Scan):
-    name = "general"
+class Blocklist(Scan):
+    name = "blocklist"
 
     def __init__(self, *kwargs, **kwargs2):
         Scan.__init__(self, kwargs, kwargs2)
@@ -19,7 +19,7 @@ class General(Scan):
     def getName(cls):
         return cls.name
 
-# nmap -p <PORT> <target>
+# MXTOOLBOX  api/v1/Lookup/{Command}/?argument={argument}
     def getCommand(self):
         command = []
         command += ["nmap"]

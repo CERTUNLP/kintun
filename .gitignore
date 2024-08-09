@@ -69,3 +69,5 @@ target/
 
 # Custom scan lib
 !scannerapp/model/vuln/custom/lib
+
+.env

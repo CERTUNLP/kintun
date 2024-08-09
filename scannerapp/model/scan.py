@@ -31,7 +31,9 @@ import traceback
 import xmlrpc.client
 import socket
 
-from config import conf, dbconf, scanconf, endpointsconf, logger, db, maillog
+from scannerapp.result import Result
+
+from config import db, scanconf, endpointsconf, logger, maillog
 
 
 class Scan:
@@ -42,6 +44,7 @@ class Scan:
         self._id = None
         self._network = None
         self._ports = []
+        self._protocol = "tcp"
         self._outputs = []
         self.params = {}
         self.origin = ""
@@ -82,6 +85,9 @@ class Scan:
 
     def getAddress(self):
         return self.network.split("/")[0]
+
+    def addProtocol(self, protocol):
+        return ["-sS"] if protocol == "tcp" else ["-sU"]
 
     def start(self, preemptive=False):
         logger.info(
@@ -202,7 +208,7 @@ class Scan:
                 )
                 raise e
             try:
-                self.result = self.prepareOutput(data)
+                self.result = Result().load_data(self.prepareOutput(data))
                 self.finished_at = str(datetime.datetime.now())
             except Exception as e:
                 self.errors.append(
@@ -301,7 +307,7 @@ class Scan:
             host_section = host_section_pattern.findall(script)
             if host_section:
                 host_section = host_section[0]
-                port_pattern = re.compile(r'(\d+)/(tcp|udp)\s+(open|filtered|closed)\s+(\S+)')
+                port_pattern = re.compile(r'(\d+)/(tcp|udp)\s+(open|filtered|closed|open\|filtered)\s+(\S+)')
                 ports = port_pattern.findall(host_section)
                 ports = [{"portid": port[0], "protocol": port[1], "state": port[2], "service": port[3]} for port in ports]
         except Exception as e:
@@ -374,7 +380,7 @@ class Scan:
             pvulnerables = []
             pnot_vulnerables = []
             evidences = []
-            evidence = "None"
+            not_evidences = []
             for port in services:
                 if (port["state"] == "open"):
                     pvulnerables.append(port["portid"])
@@ -388,12 +394,13 @@ class Scan:
                         )
                 else:
                     pnot_vulnerables.append(port["portid"])
+                    not_evidences.append(f"Servicio: {port['service']} en estado: {port['state']}")
             if pvulnerables:
                 v.append(
-                    {"address": host, "ports": pvulnerables, "evidence": evidences}
+                    {"address": host, "ports": pvulnerables, "evidence": evidences, "protocol": self.protocol}
                 )
             if pnot_vulnerables:
-                notv.append({"address": host, "ports": pnot_vulnerables})
+                notv.append({"address": host, "ports": pnot_vulnerables, "evidence": not_evidences, "protocol": self.protocol})
         return {"vulnerables": v, "no_vulnerables": notv}
 
     # def printKeyVals(self, data, indent=0):
@@ -594,19 +601,14 @@ class Scan:
         pass
 
     ####### DB-USE #######
-    def save(self, db=None):
+    def save(self, db=db):
         if not self.is_saved:
             return None
-        if db == None:
-            client = MongoClient(
-                dbconf["host"],
-                dbconf["port"],
-                username=dbconf["user"],
-                password=dbconf["password"],
-            )
-            db = client[dbconf["db"]]
         if not self._id:
             self._id = ObjectId()
+        print(db)
+        print()
+        print(self.__dict__)
         db.scans.update_one({"_id": self._id}, {"$set": self.__dict__}, upsert=True)
         # return db.insert_one(self.toDict()).inserted_id
         return self._id

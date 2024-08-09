@@ -24,3 +24,4 @@ Flask
 pymongo
 requests
 gnupg
+python-dotenv

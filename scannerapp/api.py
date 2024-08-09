@@ -53,38 +53,6 @@ def bad_request(error):
         400,
     )
 
-@app.route("/api/scanV2", methods=["POST"])
-def create_scan_v2():
-    """
-    network:
-    params:
-    outputs:
-    vuln:
-    ports:
-    """
-    rj = request.json
-    if (
-        not rj
-        or not "network"
-        or not "ports" in rj
-    ):
-        abort(
-            400,
-            "Parametros incorrectos. Requiere 'network', 'params', 'outputs', 'ports' y 'vuln'",
-        )
-    try:
-        s = Scan.get_scans()["general"](
-            network=rj["network"],
-            ports=rj["ports"],
-            origin=request.remote_addr,
-        )
-        s.start()
-    except Exception as err:
-        raise err
-        # abort(400, err.args)
-    s.save(db)
-    return jsonify(make_public_scan(s.toDict())), 201
-
 
 @app.route("/api/scan", methods=["POST"])
 def create_scan():
@@ -94,6 +62,7 @@ def create_scan():
     outputs:
     vuln:
     ports:
+    protocol:
     """
     rj = request.json
     if (
@@ -115,12 +84,13 @@ def create_scan():
             params=rj["params"],
             outputs=rj["outputs"],
             origin=request.remote_addr,
+            protocol=rj.get("protocol", "tcp"),
         )
         s.start()
     except Exception as err:
         raise err
         # abort(400, err.args)
-    #s.save(db)
+    s.save(db)
     return jsonify(make_public_scan(s.toDict())), 201
 
 

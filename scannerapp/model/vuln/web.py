@@ -9,8 +9,8 @@
 
 from ..scan import Scan
 
-class General(Scan):
-    name = "general"
+class Web(Scan):
+    name = "web"
 
     def __init__(self, *kwargs, **kwargs2):
         Scan.__init__(self, kwargs, kwargs2)
@@ -31,7 +31,7 @@ class General(Scan):
         return command
 
     def addCommandPorts(self, command, ports):
-        return command + ["-p "+','.join(ports)]
+        return command + ["-p 80,443"] if not ports else command + ["-p "+','.join(ports)]
 
     def prepareOutput(self, data):
         return self.parseAsStandardOutput(data)
