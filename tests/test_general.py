@@ -11,7 +11,7 @@ data = {
     "network" : '163.10.29.168',
     "ports" : ['80','90','3306'],
     "params" : {"feed":"test", "send-nmap-report":0},
-	"protocol" : "udp",
+	"protocol" : ["tcp","udp"],
     "outputs" : [],
     "report_to" : ""
 }

@@ -21,6 +21,7 @@ from bson.objectid import ObjectId
 from pymongo import MongoClient
 import requests
 import re
+import validators
 
 import json
 import pprint
@@ -44,7 +45,7 @@ class Scan:
         self._id = None
         self._network = None
         self._ports = []
-        self._protocol = "tcp"
+        self._protocols = []
         self._outputs = []
         self.params = {}
         self.origin = ""
@@ -87,7 +88,12 @@ class Scan:
         return self.network.split("/")[0]
 
     def addProtocol(self, protocol):
-        return ["-sS"] if protocol == "tcp" else ["-sU"]
+        protocols = []
+        if 'tcp' in protocol:
+            protocols.append('-sS')
+        if 'udp' in protocol:
+            protocols.append('-sU')
+        return protocols
 
     def start(self, preemptive=False):
         logger.info(
@@ -377,15 +383,10 @@ class Scan:
         hosts = self.getIterableNmapHostsTxt(data)
         for host in hosts:
             services = self.getIterablePossibleNmapPortsTxt(data, host)
-            pvulnerables = []
-            pnot_vulnerables = []
-            evidences = []
-            not_evidences = []
-            for port in services:
-                if (port["state"] == "open"):
-                    pvulnerables.append(port["portid"])
+            for s in services:
+                if (s["state"] == "open"):
                     try:
-                        evidences.append(f"Servicio: {port['service']} en estado: {port['state']}")
+                        v.append({"address": host, "port": s["portid"], "protocol": s["protocol"], "evidence": f"Servicio: {s['service']} en estado: {s['state']}"})
                     except Exception as e:
                         self.errors.append(
                             str(datetime.datetime.now())
@@ -393,14 +394,7 @@ class Scan:
                             + str(e)
                         )
                 else:
-                    pnot_vulnerables.append(port["portid"])
-                    not_evidences.append(f"Servicio: {port['service']} en estado: {port['state']}")
-            if pvulnerables:
-                v.append(
-                    {"address": host, "ports": pvulnerables, "evidence": evidences, "protocol": self.protocol}
-                )
-            if pnot_vulnerables:
-                notv.append({"address": host, "ports": pnot_vulnerables, "evidence": not_evidences, "protocol": self.protocol})
+                    notv.append({"address": host, "port": s["portid"], "protocol": s["protocol"], "evidence": f"Servicio: {s['service']} en estado: {s['state']}"})
         return {"vulnerables": v, "no_vulnerables": notv}
 
     # def printKeyVals(self, data, indent=0):
@@ -581,6 +575,9 @@ class Scan:
             response = requests.post(url, data=h, headers=headers, verify=False)
             # print(str(response)+str(response.text))
 
+    def getDefaultProtocols(self):
+        return ['tcp']
+
     #### SUBLCLASS RESPONSIBILITY #####
     def getCommand(self):
         pass
@@ -629,6 +626,7 @@ class Scan:
             _outputs=self.outputs,
             _origin=self.origin,
             _ports=self.ports,
+            _protocols=self.protocols,
             errors=self.errors,
             output_files=self.output_files,
             finished_at=self.finished_at,
@@ -649,30 +647,22 @@ class Scan:
 
     @network.setter
     def network(self, n):
-        if not n:
-            raise Exception("Network cannot be empty")
-        aux = n.split("/")
-        if len(aux) > 2:
-            raise Exception("Network malformed")
-        if len(aux) == 2 and len(aux[1]) > 2:
-            raise Exception("Network malformed")
-        address = aux[0].split(".")
-        if len(address) > 4:
-            raise Exception("Network malformed")
-        for octet in address:
-            nums = octet.split(",")
-            for num in nums:
-                ranges = num.split("-")
-                if len(ranges) > 2:
-                    raise Exception("Network malformed")
-                for r in ranges:
-                    try:
-                        val = int(r)
-                        if val < 0 or val > 255:
-                            raise Exception("Network malformed")
-                    except:
-                        raise Exception("Network malformed")
-        self._network = n
+        # IP Check
+        try:
+            socket.inet_aton(n)
+            self._network = n
+            return
+        except socket.error:
+            pass
+
+        # Domain Check
+        if validators.domain(n):
+            self._network = n
+            return
+
+        # If none of the checks pass, raise an exception
+        raise ValueError("Network malformed")
+
 
     def setParams(self, p):
         if type(p) != dict:
@@ -707,6 +697,18 @@ class Scan:
         if p == []:
             p = self.getDefaultPorts()
         self._ports = p
+
+    @property
+    def protocols(self):
+        return self._protocols
+
+    @protocols.setter
+    def protocols(self, p):
+        if type(p) != list:
+            raise Exception("Protocols must be a list")
+        if p == []:
+            p = self.getDefaultProtocols()
+        self._protocols = p
 
     @property
     def origin(self):

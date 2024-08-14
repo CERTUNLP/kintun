@@ -15,6 +15,7 @@ services:
             - mongo
         networks:
             - mynetwork
+        privileged: true
 
     mongo:
       image: mongo

@@ -2,24 +2,15 @@ class Result:
     def __init__(self, json_result=None):
         self.vulnerables = []
         self.no_vulnerables = []
+        self.type = "vuln"
 
     def load_data(self, json_result):
-        print(json_result)
-        for vuln in json_result.get("vulnerables", []):
-            address = vuln.get("address")
-            ports = vuln.get("ports")
-            evidence = vuln.get("evidence")
-            for port, ev in zip(ports, evidence):
-                self.add_vulnerable(address, port, vuln.get("protocol"), ev)
-
-        for not_vuln in json_result.get("no_vulnerables", []):
-            print("not_vuln", not_vuln)
-            address = not_vuln.get("address")
-            ports = not_vuln.get("ports")
-            evidence = not_vuln.get("evidence")
-            for port, ev in zip(ports, evidence):
-                self.add_no_vulnerable(address, port, not_vuln.get("protocol"), ev)
-        return self.get_results()
+        self.vulnerables = json_result["vulnerables"]
+        self.no_vulnerables = json_result["no_vulnerables"]
+        if (self.type == "vuln"):
+            return self.get_results_vuln()
+        else:
+            return self.get_results_api()
     
     def add_vulnerable(self, address, port, protocol, evidence):
         self.vulnerables.append({
@@ -37,7 +28,13 @@ class Result:
             "evidence": evidence
         })
 
-    def get_results(self):
+    def get_results_vuln(self):
+        return {
+            "vulnerables": self.vulnerables,
+            "no_vulnerables": self.no_vulnerables
+        }
+
+    def get_results_api(self):
         return {
             "vulnerables": self.vulnerables,
             "no_vulnerables": self.no_vulnerables

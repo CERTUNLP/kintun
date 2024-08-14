@@ -23,7 +23,7 @@ class Web(Scan):
     def getCommand(self):
         command = []
         command += ["nmap"]
-        command += self.addProtocol(self.protocol)
+        command += self.addProtocol(self.protocols)
         command += ["-Pn"]
         command = self.addCommandPorts(command,self.ports)
         command += [self.network]
@@ -31,7 +31,11 @@ class Web(Scan):
         return command
 
     def addCommandPorts(self, command, ports):
-        return command + ["-p 80,443"] if not ports else command + ["-p "+','.join(ports)]
+        if not ports:
+            self.ports = ["80", "443"]
+            return command + ["-p 80,443"]
+        else:
+            return command + ["-p "+','.join(ports)]
 
     def prepareOutput(self, data):
         return self.parseAsStandardOutput(data)

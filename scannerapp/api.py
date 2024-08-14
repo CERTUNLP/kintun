@@ -84,7 +84,7 @@ def create_scan():
             params=rj["params"],
             outputs=rj["outputs"],
             origin=request.remote_addr,
-            protocol=rj.get("protocol", "tcp"),
+            protocols=rj.get("protocol", ["tcp"]),
         )
         s.start()
     except Exception as err:
@@ -173,6 +173,8 @@ def make_public_scan(scan):
             new_scan[field] = str(scan[field])
         else:
             new_scan[field] = scan[field]
+        if field == "result":
+            print("Result is" + str(scan[field]))
     return new_scan
 
 
@@ -197,12 +199,6 @@ def report(scan_id):
 def print_something():
     print("Imprimiendo request recibida: ")
     print(request.args)
-
-    # print(request.args)
-    # print(request.form)
-    # print(request.files)
-    # print(request.values)
-    # print(request.json)
     print(request.data)
     # request.json intenta convertir automaticamente a json y si no puede da un error poco descriptivo
     if not request.data:

@@ -16,6 +16,8 @@ from utils.db import setup_db
 from utils.send_mail import MailLog
 from dotenv import load_dotenv
 
+load_dotenv()
+
 # Config
 base_path = os.path.dirname(os.path.abspath(__file__))
 

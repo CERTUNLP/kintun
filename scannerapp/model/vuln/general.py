@@ -23,7 +23,7 @@ class General(Scan):
     def getCommand(self):
         command = []
         command += ["nmap"]
-        command += self.addProtocol(self.protocol)
+        command += self.addProtocol(self.protocols)
         command += ["-Pn"]
         command = self.addCommandPorts(command,self.ports)
         command += [self.network]
