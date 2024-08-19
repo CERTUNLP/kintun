@@ -8,6 +8,7 @@
 #
 
 __all__ = [
+    "blocklist",
     "dnsrecursive",
     "dnszonetransfer",
     "dnsrecursiveexternal",

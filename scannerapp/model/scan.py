@@ -84,6 +84,17 @@ class Scan:
             data = f.read()
         return json.loads(data)
 
+    
+    def loadJson(self, json_file):
+        with open(json_file) as f:
+            data = f.read()
+        return json.loads(data)
+
+    def loadTxt(self, txt_file):
+        with open(self.getOutputTxtFilePathName()) as f:
+            data = f.read()
+        return data
+
     def getAddress(self):
         return self.network.split("/")[0]
 
@@ -188,8 +199,6 @@ class Scan:
                 out, err = self.execute()
                 out = out.decode("utf-8")
                 err = err.decode("utf-8")
-                # print(out)
-                # print(err)
                 if err != "":
                     self.errors.append(
                         str(datetime.datetime.now())
@@ -204,8 +213,7 @@ class Scan:
                 )
                 raise e
             try:
-                data = out
-                #data = self.loadOutput(out)
+                data = self.loadOutput(out)
             except Exception as e:
                 self.errors.append(
                     str(datetime.datetime.now())
@@ -265,6 +273,9 @@ class Scan:
 
     def loadOutput(self, output):
         return self.loadXmlAsJson(self.getOutputXmlFilePathName())
+
+    def loadOutputJson(self, output):
+        return self.loadJson(self.getOutputJsonFilePath())
 
     def loadOutputTxt(self, output):
         return self.loadTxt(self.getOutputTxtFilePathName())

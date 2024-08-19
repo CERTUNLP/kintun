@@ -2,27 +2,23 @@ import requests
 from dotenv import load_dotenv
 import os
 
-load_dotenv()
-
-api_key = os.getenv("MXTOOLBOX_API_KEY")
-
-url = "https://api.mxtoolbox.com/api/v1/Lookup/blacklist/?argument=163.10.28.130"
+url = 'http://localhost:5000/api'
 headers = {
-    'Authorization': api_key
+    'accept': 'application/json',
+    'Content-Type': 'application/json',
 }
 
-# data = {
-#     "vuln" : "general",
-#     "network" : '163.10.29.168',
-#     "ports" : ['80','90','3306'],
-#     "params" : {"feed":"test", "send-nmap-report":0},
-# 	"protocol" : ["tcp","udp"],
-#     "outputs" : [],
-#     "report_to" : ""
-# }
-r = requests.get(url, headers=headers)
+data = {
+    "vuln" : "blocklist",
+    "network" : '163.10.29.145',
+    "ports" : [],
+    "params" : {"feed":"test", "send-nmap-report":0},
+	"protocol" : [],
+    "outputs" : [],
+    "report_to" : ""
+}
 
-if (r.json().get('Failed')):
-    print("Ip is blacklisted")
-else:
-    print("Ip is not blacklisted")
+r = requests.post(url+'/scan', headers=headers, json=data)
+
+print(r.status_code)
+print(r.text)

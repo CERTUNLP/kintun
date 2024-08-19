@@ -35,3 +35,6 @@ class General(Scan):
 
     def prepareOutput(self, data):
         return self.parseAsStandardOutput(data)
+
+    def loadOutput(self, output):
+        return self.loadOutputTxt(output)

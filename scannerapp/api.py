@@ -173,8 +173,6 @@ def make_public_scan(scan):
             new_scan[field] = str(scan[field])
         else:
             new_scan[field] = scan[field]
-        if field == "result":
-            print("Result is" + str(scan[field]))
     return new_scan
 
 

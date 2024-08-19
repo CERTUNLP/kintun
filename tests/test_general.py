@@ -8,8 +8,8 @@ headers = {
 
 data = {
     "vuln" : "general",
-    "network" : '163.10.29.168',
-    "ports" : ['80','90','3306'],
+    "network" : '163.10.11.147',
+    "ports" : ['22','90','3306'],
     "params" : {"feed":"test", "send-nmap-report":0},
 	"protocol" : ["tcp","udp"],
     "outputs" : [],
