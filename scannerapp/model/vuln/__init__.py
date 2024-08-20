@@ -11,7 +11,6 @@ __all__ = [
     "blocklist",
     "dnsrecursive",
     "dnszonetransfer",
-    "dnsrecursiveexternal",
     "general",
     "heartbleed",
     "httpgooglemalware",

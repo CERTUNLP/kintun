@@ -11,6 +11,8 @@ RUN apt update && apt install -y \
     rpcbind \
     smbclient \
     wget \
+    dnsutils \
+    ntp \
     build-essential \
     libssl-dev \
     && rm -rf /var/lib/apt/lists/*

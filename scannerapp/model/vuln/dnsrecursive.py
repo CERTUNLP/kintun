@@ -19,23 +19,30 @@ class DnsRecursive(Scan):
     def getName(cls):
         return cls.name
 
-# nmap -sU -p 53 --script=dns-recursion <target>
+    # dig +short test.openresolver.com TXT @1.2.3.4
     def getCommand(self):
         command = []
-        command += ["nmap"]
-        command += ["-sU"]
-        command += ["-Pn"]
-        command = self.addCommandPorts(command,self.ports)
-        command += ["--script="+self.getNseFolder()+"dns-recursion.nse"]
-        command += [self.network]
-        command += ["-oA="+self.getOutputNmapAllFilePathName()]
+        command += ["dig"]
+        command += ["+short"]
+        command += ["test.openresolver.com"]
+        command += ["TXT"]
+        command += ["@"+self.network]
         return command
 
-    def addCommandPorts(self, command, ports):
-        return command + ["-p "+','.join(ports)]
+    def loadOutput(self, data):
+        return data
+
+    def parseAsDig(self, response):
+        v = []
+        notv = []
+        if ("open-resolver-detected" in response):
+            v.append({"address": self.network, "evidence": f"La ip {self.network} es un servidor DNS recursivo abierto"})
+        else:
+            notv.append({"address": self.network, "evidence": f"La ip {self.network} NO es un servidor DNS recursivo abierto"})
+        return {"vulnerables": v, "no_vulnerables": notv}
 
     def prepareOutput(self, data):
-        return self.parseAsNmapScript(data)
+        return self.parseAsDig(data)
 
     def getDefaultPorts(self):
         return ["53"]

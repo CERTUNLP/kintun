@@ -33,8 +33,8 @@ vulns = {
 
 data = {
     "vuln" : "dns-recursion",
-    # "vuln" : "netbios",
-    "network" : '163.10.40.194',
+    "network" : '163.10.40.196',
+	"protocol" : ["udp"],
     "ports" : ['53'],
     "params" : {"feed":"test", "send-nmap-report":0},
     "outputs" : [],
