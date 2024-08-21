@@ -10,7 +10,7 @@ headers = {
 
 data = {
     "vuln" : "blocklist",
-    "network" : '163.10.29.145',
+    "network" : '163.10.28.130',
     "ports" : [],
     "params" : {"feed":"test", "send-nmap-report":0},
 	"protocol" : [],

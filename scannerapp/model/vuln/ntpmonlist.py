@@ -45,4 +45,4 @@ class NtpMonlist(Scan):
         return "udp"
 
     def getTypeNGEN(self):
-        return "open_ntp_monitor"
+        return "ntp_monitor"
