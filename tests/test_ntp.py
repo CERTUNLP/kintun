@@ -9,7 +9,7 @@ headers = {
 
 data = {
     "vuln" : "ntp-version",
-    "network" : '216.152.193.254',
+    "network" : '',
 	"protocol" : ['udp'],
     "ports" : ['123'],
     "params" : {"feed":"test", "send-nmap-report":0},
@@ -19,7 +19,7 @@ data = {
 
 data2 = {
     "vuln" : "ntp-monlist",
-    "network" : '216.152.193.254',
+    "network" : '',
 	"protocol" : ['udp'],
     "ports" : ['123'],
     "params" : {"feed":"test", "send-nmap-report":0},

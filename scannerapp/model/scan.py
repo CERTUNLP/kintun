@@ -396,8 +396,12 @@ class Scan:
             services = self.getIterablePossibleNmapPortsTxt(data, host)
             for s in services:
                 if (s["state"] == "open"):
+                    scripts = self.getIterableNmapScriptResultsTxt(data, host, s)
                     try:
-                        v.append({"address": host, "port": s["portid"], "protocol": s["protocol"], "evidence": f"Servicio: {s['service']} en estado: {s['state']}"})
+                        evidence = f"Servicio: {s['service']} en estado: {s['state']}"
+                        if scripts:
+                            evidence += f" - Script: {scripts[0]['script_name']} con resultado: {scripts[0]['state']}"
+                        v.append({"address": host, "port": s["portid"], "protocol": s["protocol"], "evidence": evidence})
                     except Exception as e:
                         self.errors.append(
                             str(datetime.datetime.now())
@@ -590,6 +594,9 @@ class Scan:
         return ['tcp']
 
     #### SUBLCLASS RESPONSIBILITY #####
+    def getIterableNmapScriptResultsTxt(self, script, host, service):
+        return []
+    
     def getCommand(self):
         pass
 

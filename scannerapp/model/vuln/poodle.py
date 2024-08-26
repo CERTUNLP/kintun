@@ -8,6 +8,7 @@
 #
 
 from ..scan import Scan
+import re
 
 class Poodle(Scan):
     name = "ssl-poodle"
@@ -26,24 +27,58 @@ class Poodle(Scan):
     def getCommand(self):
         command = []
         command += ["nmap"]
-        #command += ["-T2"]
         command += ["-sV"]
         command += ["--version-light"]
         command = self.addCommandPorts(command,self.ports)
         #no funciona con script del sistema, solo con path parcial
         command += ["--script="+self.getNseFolder()+"ssl-poodle.nse"]
         command += [self.network]
-        command += ["-oA="+self.getOutputNmapAllFilePathName()]
+        command += ["-oN="+self.getOutputNmapTxtFilePathName()]
         return command
 
     def addCommandPorts(self, command, ports):
         return command + ["-p "+','.join(ports)]
 
+    def getIterableNmapScriptResultsTxt(self, script, host, service):
+        script_results = []
+        try:
+            host_section_pattern = re.compile(
+                r'Nmap scan report for .* \(' + re.escape(host) + r'\)\n(.*?)(?=Nmap scan report for |\Z)', 
+                re.DOTALL
+            )
+            host_section = host_section_pattern.findall(script)
+            if not host_section:
+                return script_results
+            
+            host_section = host_section[0]
+
+            port_section_pattern = re.compile(
+                re.escape(service["portid"] + '/' + service["protocol"]) + r'.*?\n(\|\s+\S+.*?)\n\n', 
+                re.DOTALL
+            )
+            port_section_matches = port_section_pattern.findall(host_section)
+            
+            for port_section in port_section_matches:
+                if ("VULNERABLE" in port_section):
+                    state_matches = re.search(r'State:\s*(.+)$', port_section, re.MULTILINE)
+                    script_results.append({
+                        "script_name": "ssl-poodle",
+                        "state": state_matches.group(1).strip() 
+                    })
+
+        except Exception as e:
+            raise Exception("Cannot get script results. Maybe wrong parsed output: " + str(e))
+
+        return script_results
+
     def prepareOutput(self, data):
-        return self.parseAsNmapScript(data)
+        return self.parseAsStandardOutput(data)
+
+    def loadOutput(self, output):
+        return self.loadOutputTxt(output)
 
     def getDefaultPorts(self):
-        return ["443","465","993","995"]
+        return ["443"]
 
     def getPortType(self):
         return "tcp"

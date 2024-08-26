@@ -23,7 +23,7 @@ vulns = {
 # data = {
 #     "vuln" : "openportmap2",
 #     # "vuln" : "netbios",
-#     "network" : '163.10.40.194',
+#     "network" : '',
 #     "ports" : ['111'],
 #     "params" : {"feed":"test", "send-nmap-report":0},
 #     "outputs" : [],
@@ -33,7 +33,7 @@ vulns = {
 
 data = {
     "vuln" : "dns-recursion",
-    "network" : '163.10.40.196',
+    "network" : '',
 	"protocol" : ["udp"],
     "ports" : ['53'],
     "params" : {"feed":"test", "send-nmap-report":0},

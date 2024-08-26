@@ -6,13 +6,12 @@ headers = {
     'Content-Type': 'application/json',
 }
 
-
 data = {
-    "vuln" : "dns-zone-transfer",
+    "vuln" : "ssl-poodle",
     "network" : '',
-	"protocol" : ["udp"],
-    "ports" : ['53'],
-    "params" : {"feed":"test", "send-nmap-report":0, "zone": "zonetransfer.me"},
+    "ports" : ['443'],
+    "params" : {"feed":"test", "send-nmap-report":0},
+	"protocol" : ["tcp"],
     "outputs" : [],
     "report_to" : ""
 }
@@ -20,3 +19,4 @@ r = requests.post(url+'/scan', headers=headers, json=data)
 
 print(r.status_code)
 print(r.text)
+
