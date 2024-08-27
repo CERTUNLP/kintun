@@ -15,6 +15,14 @@ RUN apt update && apt install -y \
     ntp \
     build-essential \
     libssl-dev \
+    gnupg \
+    && rm -rf /var/lib/apt/lists/*
+
+# Add MongoDB repository and install mongosh
+RUN wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | apt-key add - \
+    && echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-6.0.list \
+    && apt update \
+    && apt install -y mongodb-mongosh \
     && rm -rf /var/lib/apt/lists/*
 
 # Download and install Nmap 7.94

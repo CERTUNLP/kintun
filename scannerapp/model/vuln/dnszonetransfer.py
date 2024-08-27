@@ -42,9 +42,7 @@ class DnsZoneTransfer(Scan):
 
             for line in lines:
                 if line and not line.startswith(";"):
-                    print("Line: ", line)
                     parts = line.split()
-                    print("Parts: ", parts)
                     resources.append(f"Domain name: {parts[0]} - Type: {parts[3]} - Data: {parts[4]}")
 
             if resources:
