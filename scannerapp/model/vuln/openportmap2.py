@@ -38,9 +38,9 @@ class OpenPortmap2(Scan):
         v = []
         notv = []
         if self.isVulnerable(result):
-            v.append({"address":self.getAddress(),"ports":self.getDefaultPorts(),"evidence":' '.join(self.getCommand())+'\n'+result})
+            v.append({"address":self.getAddress(),"port":self.getDefaultPorts(), "protocol":self.getPortType(),"evidence":' '.join(self.getCommand())+'\n'+result})
         else:
-            notv.append({"address":self.getAddress(),"ports":self.getDefaultPorts(),"evidence":' '.join(self.getCommand())+'\n'+result})
+            notv.append({"address":self.getAddress(),"port":self.getDefaultPorts(), "protocol":self.getPortType(), "evidence": "La ip "+self.getAddress()+" no es vulnerable a Open Portmap"})
         return {"vulnerables":v, "no_vulnerables":notv}
 
     def isNmapScan(self):
@@ -63,6 +63,9 @@ class OpenPortmap2(Scan):
 
     def getDefaultPorts(self):
         return ["111"]
+
+    def getPortType(self):
+        return "udp"
 
     def getTypeNGEN(self):
         return "open_portmap"
