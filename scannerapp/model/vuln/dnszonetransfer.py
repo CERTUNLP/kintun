@@ -35,7 +35,8 @@ class DnsZoneTransfer(Scan):
     def parseAsDig(self, response):
         v = []
         notv = []
-        if ("Transfer failed" not in response):
+
+        if all(fail not in response for fail in ["Transfer failed", "connection refused","failed"]):
             resources = []
 
             lines = response.splitlines()
