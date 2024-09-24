@@ -24,7 +24,7 @@ class DnsZoneTransfer(Scan):
     def getCommand(self):
         command = []
         command += ["dig"]
-        command += [self.params["zone"]]
+        command += ["zonetransfer.me"]
         command += ["@"+self.network]
         command += ["axfr"]
         return command
