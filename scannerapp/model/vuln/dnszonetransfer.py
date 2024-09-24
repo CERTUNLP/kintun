@@ -47,9 +47,9 @@ class DnsZoneTransfer(Scan):
                     resources.append(f"Domain name: {parts[0]} - Type: {parts[3]} - Data: {parts[4]}")
 
             if resources:
-                v.append({"address": self.network, "evidence": f"El recurso {self.network} en la zona {self.params['zone']} permite transferencia de zona", "resources": resources})
+                v.append({"address": self.network, "evidence": f"El recurso {self.network} en la zona zonetransfer.me permite transferencia de zona", "resources": resources})
         else:
-            notv.append({"address": self.network, "evidence": f"El recurso {self.network} en la zona {self.params['zone']} no permite transferencia de zona"})
+            notv.append({"address": self.network, "evidence": f"El recurso {self.network} en la zona zonetransfer.me no permite transferencia de zona"})
         return {"vulnerables": v, "no_vulnerables": notv}
 
     def prepareOutput(self, data):
