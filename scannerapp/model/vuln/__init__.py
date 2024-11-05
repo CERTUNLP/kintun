@@ -25,6 +25,7 @@ __all__ = [
     "openportmap",
     "openportmap2",
     "poodle",
+    "rdp",
     "smtpopenrelay",
     "snmp",
     "snmpsysdescr",

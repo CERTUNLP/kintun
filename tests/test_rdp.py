@@ -8,10 +8,11 @@ headers = {
 }
 
 data = {
-    "vuln" : "telnet",
+    "vuln" : "rdp",
     "network" : '',
-    "ports" : ['23'],
+    "ports" : ['3389'],
     "params" : {"feed":"test", "send-nmap-report":0},
+	"protocol" : ["tcp"],
     "outputs" : [],
     "report_to" : ""
 }
@@ -19,3 +20,4 @@ r = requests.post(url+'/scan', headers=headers, json=data)
 
 print(r.status_code)
 print(r.text)
+

@@ -6,6 +6,7 @@ url = 'http://localhost:5000/api'
 headers = {
     'accept': 'application/json',
     'Content-Type': 'application/json',
+    'x-api-key': 'api-key'
 }
 
 data = {
