@@ -29,5 +29,6 @@ __all__ = [
     "snmp",
     "snmpsysdescr",
     "socksopenproxy",
+    "telnet",
     "web",
 ]

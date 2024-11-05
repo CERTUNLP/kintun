@@ -16,6 +16,7 @@ RUN apt update && apt install -y \
     build-essential \
     libssl-dev \
     gnupg \
+    netcat \
     && rm -rf /var/lib/apt/lists/*
 
 # Add MongoDB repository and install mongosh
