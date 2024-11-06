@@ -17,6 +17,7 @@ RUN apt update && apt install -y \
     libssl-dev \
     gnupg \
     netcat \
+    redis-tools \
     && rm -rf /var/lib/apt/lists/*
 
 # Add MongoDB repository and install mongosh
