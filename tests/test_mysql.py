@@ -7,17 +7,15 @@ headers = {
     'x-api-key': 'your_api_key'
 }
 
-
 data = {
-    "vuln" : "openportmap2",
+    "vuln" : "mysql",
     "network" : '',
-	"protocol" : ['udp'],
-    "ports" : ['111'],
+    "ports" : ['3306'],
     "params" : {"feed":"test", "send-nmap-report":0},
+	"protocol" : ["tcp"],
     "outputs" : [],
     "report_to" : ""
 }
-
 r = requests.post(url+'/scan', headers=headers, json=data)
 
 print(r.status_code)

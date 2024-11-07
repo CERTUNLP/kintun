@@ -32,7 +32,6 @@ class Blocklist(Scan):
     # MXTOOLBOX  api/v1/Lookup/{Command}/?argument={argument}
     def execute(self):
         try:
-
             header = {"Authorization": mxtoolbox_api_key}
             r = requests.get(f"https://api.mxtoolbox.com/api/v1/Lookup/blacklist/?argument={self.network}", headers=header)
             if r.status_code != 200:

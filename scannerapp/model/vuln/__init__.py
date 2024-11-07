@@ -16,6 +16,7 @@ __all__ = [
     "httpgooglemalware",
     "httpopenproxy",
     "ldap",
+    "mysql",
     "mongo",
     "netbios",
     "netbiossmb",
