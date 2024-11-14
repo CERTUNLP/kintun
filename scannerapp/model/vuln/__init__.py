@@ -18,6 +18,7 @@ __all__ = [
     "ldap",
     "mysql",
     "mongo",
+    "mqtt",
     "netbios",
     "netbiossmb",
     "ntpmonlist",
