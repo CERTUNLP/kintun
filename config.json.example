@@ -43,7 +43,7 @@
 		"error":{
 			"name":"error.log"
 		},
-        "folder":""
+        "folder":"logs"
   },
   "maillog":{
       "name": "Kintun",
