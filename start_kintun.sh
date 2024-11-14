@@ -64,13 +64,13 @@ else
 
   echo "Installing system dependencies..."
   sudo apt update
-  sudo apt install -y shelldap expect rpcbind smbclient wget dnsutils ntp build-essential libssl-dev gnupg redis-tools mongodb-mongosh nmap netcat
+  sudo apt install -y shelldap expect rpcbind smbclient wget dnsutils ntp build-essential libssl-dev gnupg redis-tools nmap netcat-openbsd
 
   echo "Adding MongoDB repository and installing mongosh..."
   wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | sudo apt-key add -
   echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
   sudo apt update
   sudo apt install -y mongodb-mongosh
-  
+
   python3 app.py
 fi
