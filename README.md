@@ -44,8 +44,10 @@ $ sudo apt update
 $ sudo apt install -y python3 python3-pip python3-dev libssl-dev libffi-dev expect shelldap nmap mongodb
 ```
 
-##### Python Dependencies:
+##### Python Dependencies (we recommend to use virtualenv):
 ```bash
+$ python3 -m venv env
+$ source env/bin/activate
 $ pip3 install -r requirements.txt
 ```
 
@@ -65,7 +67,7 @@ $ cp config.json.example config.json
 2. Open the config.json file and modify the MongoDB connection settings as needed (e.g., host, port, authentication).
 
 #### 5. Running Kintun
-To make it easier to start Kintun, use the provided start_kintun.sh script. This script checks for Docker, installs requirements if necessary, and prompts you to choose between running Kintun with Docker or locally.
+To make it easier to start Kintun, use the provided start_kintun.sh script. This script checks for Docker, installs requirements if necessary, and prompts you to choose between running Kintun with Docker or locally (if wanted to run locally remember to use virtualenv).
 To run Kintun:
 ```bash
 $ ./start_kintun.sh
