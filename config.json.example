@@ -1,0 +1,60 @@
+{
+	"databases":{
+		"driver": "mongodb",
+	    "mongodb":{
+            "user":"root",
+            "password":"example",
+            "mechanism":"SCRAM-SHA-1",
+	        "host":"mongo",
+            "port":27017,
+	        "db":"kintun",
+	        "collection_scans":"scans"
+	    }
+	},
+  "endpoints":{
+      "NGEN": "https://<NGEN URL>/api/v1/incidents.json?apikey=<INSERT API KEY HERE>",
+	    "Another API": "https://<API URL>/incidents.json?apikey=<API KEY>",
+      "localhost": "https://localhost:5000/api/print",
+      "": ""
+  },
+  "info":{
+  	"version":0.1,
+  	"name":"Kintun",
+		"license":"GPLv3"
+  },
+  "scan":{
+      "folder_output": "outputs",
+		  "folder_nse": "scannerapp/model/vuln/nse/",
+		  "folder_custom": "scannerapp/model/vuln/custom/",
+		  "folder_lib": "scannerapp/model/vuln/custom/lib/",
+      "file_prefix": "",
+      "max_running": 15
+  },
+  "ssl":{
+      "crt": "key.crt",
+		  "key": "key.key",
+		  "folder": "ssl"
+  },
+	"log":{
+		"name": "app_log",
+		"stdout":{
+			"name":"stdout.log"
+		},
+		"error":{
+			"name":"error.log"
+		},
+        "folder":""
+  },
+  "maillog":{
+      "name": "Kintun",
+      "me": "kintun@domain.com",
+      "recipients_error": ["your-email@example.com"],
+      "recipients_log": ["your-email@example.com"],
+      "recipients": ["your-email@example.com"],
+      "subject": "[{0}]{1} Reporte {0}",
+      "body": "Le enviamos un reporte automático. {0}\n\nKINTUN",
+      "mail_server": "your_mail_server",
+      "file_name": "{0}.txt",
+      "detail": ""
+  }
+}
