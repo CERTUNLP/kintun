@@ -1,7 +1,9 @@
 # Local Data
 scan-output-*
 outputs/*
+!outputs/.gitkeep
 logs/*
+!logs/.gitkeep
 config.json
 
 # Certificates
