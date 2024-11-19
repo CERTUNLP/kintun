@@ -9,8 +9,8 @@
 
 from ..scan import Scan
 
-class NtpMonlist(Scan):
-    name = "ntp-monlist"
+class Web(Scan):
+    name = "web"
 
     def __init__(self, *kwargs, **kwargs2):
         Scan.__init__(self, kwargs, kwargs2)
@@ -19,30 +19,26 @@ class NtpMonlist(Scan):
     def getName(cls):
         return cls.name
 
-# nmap -sU -pU:123 -Pn -n --script=ntp-monlist <target>
+# nmap -p <PORT> <target>
     def getCommand(self):
         command = []
         command += ["nmap"]
-        command += ["-sU"]
+        command += self.addProtocol(self.protocols)
         command += ["-Pn"]
-        command += ["-n"]
         command = self.addCommandPorts(command,self.ports)
-        command += ["--script=ntp-monlist"]
         command += [self.network]
-        command += ["-oA="+self.getOutputNmapAllFilePathName()]
+        command += ["-oN="+self.getOutputNmapTxtFilePathName()]
         return command
 
     def addCommandPorts(self, command, ports):
-        return command + ["-pU:"+','.join(ports)]
+        if not ports:
+            self.ports = ["80", "443"]
+            return command + ["-p 80,443"]
+        else:
+            return command + ["-p "+','.join(ports)]
 
     def prepareOutput(self, data):
-        return self.parseAsNmapScript(data)
+        return self.parseAsStandardOutput(data)
 
-    def getDefaultPorts(self):
-        return ["123"]
-
-    def getPortType(self):
-        return "udp"
-
-    def getTypeNGEN(self):
-        return "ntp_monitor"
+    def loadOutput(self, output):
+        return self.loadOutputTxt(output)

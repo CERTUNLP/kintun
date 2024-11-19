@@ -20,21 +20,40 @@ class DnsZoneTransfer(Scan):
     def getName(cls):
         return cls.name
 
-# nmap -sU -p 53 --script=dns-recursion <target>
+    # dig +short <zone> @IP axfr
     def getCommand(self):
         command = []
-        command += ["nmap"]
-        command = self.addCommandPorts(command,self.ports)
-        command += ["--script=dns-zone-transfer.nse"]
-        command += [self.network]
-        command += ["-oA="+self.getOutputNmapAllFilePathName()]
+        command += ["dig"]
+        command += ["zonetransfer.me"]
+        command += ["@"+self.network]
+        command += ["axfr"]
         return command
 
-    def addCommandPorts(self, command, ports):
-        return command + ["-p "+','.join(ports)]
+    def loadOutput(self, data):
+        return data
+
+    def parseAsDig(self, response):
+        v = []
+        notv = []
+
+        if all(fail not in response for fail in ["Transfer failed", "connection refused","failed"]):
+            resources = []
+
+            lines = response.splitlines()
+
+            for line in lines:
+                if line and not line.startswith(";"):
+                    parts = line.split()
+                    resources.append(f"Domain name: {parts[0]} - Type: {parts[3]} - Data: {parts[4]}")
+
+            if resources:
+                v.append({"address": self.network, "evidence": f"El recurso {self.network} en la zona zonetransfer.me permite transferencia de zona", "resources": resources})
+        else:
+            notv.append({"address": self.network, "evidence": f"El recurso {self.network} en la zona zonetransfer.me no permite transferencia de zona"})
+        return {"vulnerables": v, "no_vulnerables": notv}
 
     def prepareOutput(self, data):
-        return self.parseAsNmapScript(data)
+        return self.parseAsDig(data)
 
     def getDefaultPorts(self):
         return ["53"]
@@ -44,17 +63,3 @@ class DnsZoneTransfer(Scan):
 
     def getTypeNGEN(self):
         return "open_dns"
-
-#    def getIterablePossibleNmapPorts(self, host):
-#        ports = []
-#        try:
-#            ports = host['hostscript']['script']
-#        except:
-#            pass
-#            raise Exception ("Cannot get info about scan hostscript. Maybe wrong parsed output")
-#        if type(ports) != type([]):
-#            ports = [ports]
-#        return ports
-
-    def getParsedEvidence(self, service, host):
-        return {'timestamp':str(self._id.generation_time),'service':service,'evidence':host.get('ports', 'Evidence error').get('port', 'Evidence error').get('script','Evidence Error').get('output','Evidence Error').replace('\n', '')}

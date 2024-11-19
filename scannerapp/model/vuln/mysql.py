@@ -10,8 +10,8 @@
 from ..scan import Scan
 import re
 
-class Poodle(Scan):
-    name = "ssl-poodle"
+class Mysql(Scan):
+    name = "mysql"
 
     def __init__(self, *kwargs, **kwargs2):
         Scan.__init__(self, kwargs, kwargs2)
@@ -20,24 +20,17 @@ class Poodle(Scan):
     def getName(cls):
         return cls.name
 
-    def getNGENName(self):
-        return "poodle"
-
-# nmap -sV --version-light --script ssl-poodle -p 443 <host>
+    # nmap -p <PORT> <target>
     def getCommand(self):
         command = []
         command += ["nmap"]
-        command += ["-sV"]
-        command += ["--version-light"]
+        command += self.addProtocol(self.protocols)
+        command += ["-Pn"]
         command = self.addCommandPorts(command,self.ports)
-        #no funciona con script del sistema, solo con path parcial
-        command += ["--script="+self.getNseFolder()+"ssl-poodle.nse"]
+        command += ["--script=mysql-info"]
         command += [self.network]
         command += ["-oN="+self.getOutputNmapTxtFilePathName()]
         return command
-
-    def addCommandPorts(self, command, ports):
-        return command + ["-p "+','.join(ports)]
 
     def getIterableNmapScriptResultsTxt(self, script, host, service):
         script_results = []
@@ -59,29 +52,25 @@ class Poodle(Scan):
             port_section_matches = port_section_pattern.findall(host_section)
             
             for port_section in port_section_matches:
-                if ("VULNERABLE" in port_section):
-                    state_matches = re.search(r'State:\s*(.+)$', port_section, re.MULTILINE)
-                    script_results.append({
-                        "script_name": "ssl-poodle",
-                        "state": state_matches.group(1).strip() 
-                    })
+                if "mysql-info" in port_section:
+                    version_match = re.search(r'Version:\s+([\d.]+)', port_section)
+                    if version_match:
+                        mysql_version = version_match.group(1).strip()
+                        script_results.append({
+                            "script_name": "mysql-info",
+                            "state": mysql_version
+                        })
 
         except Exception as e:
             raise Exception("Cannot get script results. Maybe wrong parsed output: " + str(e))
 
         return script_results
 
+    def addCommandPorts(self, command, ports):
+        return command + ["-p "+','.join(ports)]
+
     def prepareOutput(self, data):
         return self.parseAsStandardOutput(data)
 
     def loadOutput(self, output):
         return self.loadOutputTxt(output)
-
-    def getDefaultPorts(self):
-        return ["443"]
-
-    def getPortType(self):
-        return "tcp"
-
-    def getTypeNGEN(self):
-        return "poodle"

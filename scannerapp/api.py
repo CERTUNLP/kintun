@@ -13,21 +13,42 @@ from .model.vuln import *
 from .model.scan import Scan
 from config import logger
 
+from functools import wraps
 from flask import jsonify, abort, make_response, request, url_for, redirect
 from bson.objectid import ObjectId
 
 from config import db
+import os
+from dotenv import load_dotenv
 
+load_dotenv()
+VALID_API_KEY = os.getenv("KINTUN_API_KEY","")
+
+def require_api_key(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        api_key = request.headers.get('x-api-key')
+        if api_key and api_key == VALID_API_KEY:
+            return f(*args, **kwargs)
+        else:
+            return jsonify({"error": "Unauthorized", "error_type": "401"}), 401
+    return decorated_function
 
 @app.route("/", methods=["GET"])
+@require_api_key
 def get_root():
     return redirect(url_for("get_api_root"))
 
 
 @app.route("/api/scan/<scan_id>", methods=["GET"])
+@require_api_key
 def get_scan(scan_id):
-    x = Scan.get(scan_id, db)
-    return jsonify(make_public_scan(x.toDict()))
+    try: 
+        x = Scan.get(scan_id, db)
+        return jsonify(make_public_scan(x.toDict()))
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return jsonify({"error": "Scan not found", "error_type": "404"}), 404
     # return x.toJson()
 
 
@@ -51,6 +72,7 @@ def bad_request(error):
 
 
 @app.route("/api/scan", methods=["POST"])
+@require_api_key
 def create_scan():
     """
     network:
@@ -58,6 +80,7 @@ def create_scan():
     outputs:
     vuln:
     ports:
+    protocol:
     """
     rj = request.json
     if (
@@ -79,17 +102,19 @@ def create_scan():
             params=rj["params"],
             outputs=rj["outputs"],
             origin=request.remote_addr,
+            protocols=rj.get("protocol", ["tcp"]),
         )
         s.start()
     except Exception as err:
         raise err
         # abort(400, err.args)
-    # scan.save(db)
+    s.save(db)
     return jsonify(make_public_scan(s.toDict())), 201
 
 
 @app.route("/api/scan_now", methods=["POST"])
-def create_scan():
+@require_api_key
+def create_scan_now():
     """
     network:
     params:
@@ -122,11 +147,12 @@ def create_scan():
     except Exception as err:
         raise err
         # abort(400, err.args)
-    # scan.save(db)
+    s.save(db)
     return jsonify(make_public_scan(s.toDict())), 201
 
 
 @app.route("/api/scans/<scan_id>", methods=["PUT"])
+@require_api_key
 def update_scan(scan_id):
     # TODO: Reimplement
     s = [scan for scan in [] if scan["id"] == scan_id]
@@ -148,6 +174,7 @@ def update_scan(scan_id):
 
 
 @app.route("/api/scans/<scan_id>", methods=["DELETE"])
+@require_api_key
 def delete_scan(scan_id):
     # TODO: Reimplement
     s = [scan for scan in [] if scan["id"] == scan_id]
@@ -155,7 +182,6 @@ def delete_scan(scan_id):
         abort(404)
     # scans.remove(s[0])
     return jsonify({"result": "Not implemented yet."})
-
 
 def make_public_scan(scan):
     new_scan = {}
@@ -171,32 +197,30 @@ def make_public_scan(scan):
 
 
 @app.route("/api/scans", methods=["GET"])
+@require_api_key
 def get_scans():
     alls = [make_public_scan(scan) for scan in db.scans.find()]
     return jsonify({"scans": alls, "count": len(alls)})
 
 
 @app.route("/api/", methods=["GET"])
+@require_api_key
 def get_api_root():
     return jsonify({"name": "Kintun Scan API", "version": "0.1"})
 
 
 @app.route("/api/report/<scan_id>", methods=["GET"])
-def report():
+@require_api_key
+def report(scan_id):
     s = db.scans.find()
     return jsonify({"scans": [make_public_scan(scan) for scan in s]})
 
 
 @app.route("/api/print", methods=["POST", "GET"])
+@require_api_key
 def print_something():
     print("Imprimiendo request recibida: ")
     print(request.args)
-
-    # print(request.args)
-    # print(request.form)
-    # print(request.files)
-    # print(request.values)
-    # print(request.json)
     print(request.data)
     # request.json intenta convertir automaticamente a json y si no puede da un error poco descriptivo
     if not request.data:

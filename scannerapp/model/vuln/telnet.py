@@ -8,9 +8,10 @@
 #
 
 from ..scan import Scan
+## This script uses dns-zone-transfer from nmap shared scripts folder
 
-class DnsRecursive(Scan):
-    name = "dns-recursion"
+class Telnet(Scan):
+    name = "telnet"
 
     def __init__(self, *kwargs, **kwargs2):
         Scan.__init__(self, kwargs, kwargs2)
@@ -19,36 +20,36 @@ class DnsRecursive(Scan):
     def getName(cls):
         return cls.name
 
-    # dig +short test.openresolver.com TXT @1.2.3.4
+    # nc -zv -w 5 IP PORT
     def getCommand(self):
         command = []
-        command += ["dig"]
-        command += ["+short"]
-        command += ["test.openresolver.com"]
-        command += ["TXT"]
-        command += ["@"+self.network]
+        command += ["nc"]
+        command += ["-w 5"]
+        command += [self.network]
+        command += [self.ports[0]]
         return command
 
     def loadOutput(self, data):
         return data
 
-    def parseAsDig(self, response):
+    def parseAsTelnet(self, response):
         v = []
         notv = []
-        if ("open-resolver-detected" in response):
-            v.append({"address": self.network, "evidence": f"La ip {self.network} es un servidor DNS recursivo abierto"})
+
+        if response:
+            v.append({"address": self.network, "evidence": f"La ip {self.network} posee telnet abierto en el puerto {self.ports[0]}"})
         else:
-            notv.append({"address": self.network, "evidence": f"La ip {self.network} NO es un servidor DNS recursivo abierto"})
+            notv.append({"address": self.network, "evidence": f"La ip {self.network} NO posee telnet abierto en el puerto {self.ports[0]}"})
         return {"vulnerables": v, "no_vulnerables": notv}
 
     def prepareOutput(self, data):
-        return self.parseAsDig(data)
+        return self.parseAsTelnet(data)
 
     def getDefaultPorts(self):
-        return ["53"]
+        return ["23"]
 
     def getPortType(self):
-        return "udp"
+        return "tcp"
 
     def getTypeNGEN(self):
-        return "open_dns"
+        return "telnet"

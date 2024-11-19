@@ -20,6 +20,8 @@ from flask import jsonify
 from bson.objectid import ObjectId
 from pymongo import MongoClient
 import requests
+import re
+import validators
 
 import json
 import pprint
@@ -30,7 +32,9 @@ import traceback
 import xmlrpc.client
 import socket
 
-from config import conf, dbconf, scanconf, endpointsconf, logger, db, maillog
+from scannerapp.result import Result
+
+from config import db, scanconf, endpointsconf, logger, maillog
 
 
 class Scan:
@@ -41,6 +45,7 @@ class Scan:
         self._id = None
         self._network = None
         self._ports = []
+        self._protocols = []
         self._outputs = []
         self.params = {}
         self.origin = ""
@@ -79,8 +84,27 @@ class Scan:
             data = f.read()
         return json.loads(data)
 
+    
+    def loadJson(self, json_file):
+        with open(json_file) as f:
+            data = f.read()
+        return json.loads(data)
+
+    def loadTxt(self, txt_file):
+        with open(self.getOutputTxtFilePathName()) as f:
+            data = f.read()
+        return data
+
     def getAddress(self):
         return self.network.split("/")[0]
+
+    def addProtocol(self, protocol):
+        protocols = []
+        if 'tcp' in protocol:
+            protocols.append('-sS')
+        if 'udp' in protocol:
+            protocols.append('-sU')
+        return protocols
 
     def start(self, preemptive=False):
         logger.info(
@@ -132,8 +156,14 @@ class Scan:
     def getOutputJsonFileName(self):
         return self.__addOutputFile(".json")
 
+    def getOutputTxtFileName(self):
+        return self.__addOutputFile(".txt")
+
     def getOutputXmlFilePathName(self):
         return self.relativeOutputFilePrefix() + self.getOutputXmlFileName()
+
+    def getOutputTxtFilePathName(self):
+        return self.relativeOutputFilePrefix() + self.getOutputTxtFileName()
 
     def getOutputJsonFilePath(self):
         return self.relativeOutputFilePrefix() + self.getOutputJsonFileName()
@@ -143,8 +173,14 @@ class Scan:
             self.__addOutputFile(ext)
         return self.getOutputFileName()
 
+    def getOutputNmapTxtFileName(self):
+        return self.__addOutputFile(".txt")
+
     def getOutputNmapAllFilePathName(self):
         return self.relativeOutputFilePrefix() + self.getOutputNmapAllFileName()
+
+    def getOutputNmapTxtFilePathName(self):
+        return self.relativeOutputFilePrefix() + self.getOutputNmapTxtFileName()
 
     def __addOutputFile(self, extension=""):
         name = self.getOutputFileName() + extension
@@ -163,8 +199,6 @@ class Scan:
                 out, err = self.execute()
                 out = out.decode("utf-8")
                 err = err.decode("utf-8")
-                # print(out)
-                # print(err)
                 if err != "":
                     self.errors.append(
                         str(datetime.datetime.now())
@@ -188,7 +222,7 @@ class Scan:
                 )
                 raise e
             try:
-                self.result = self.prepareOutput(data)
+                self.result = Result().load_data(self.prepareOutput(data))
                 self.finished_at = str(datetime.datetime.now())
             except Exception as e:
                 self.errors.append(
@@ -240,6 +274,12 @@ class Scan:
     def loadOutput(self, output):
         return self.loadXmlAsJson(self.getOutputXmlFilePathName())
 
+    def loadOutputJson(self, output):
+        return self.loadJson(self.getOutputJsonFilePath())
+
+    def loadOutputTxt(self, output):
+        return self.loadTxt(self.getOutputTxtFilePathName())
+
     def getIterableNmapHosts(self, script):
         hosts = []
         try:
@@ -260,6 +300,38 @@ class Scan:
             # raise Exception ("Cannot get info about scan ports. Maybe wrong parsed output")
             pass
         if type(ports) != type([]):
+            ports = [ports]
+        return ports
+
+
+    def getIterableNmapHostsTxt(self, script):
+        hosts = []
+        try:
+            host_pattern = re.compile(r'Nmap scan report for .* \((\d+\.\d+\.\d+\.\d+)\)')
+            hosts = host_pattern.findall(script)
+        except Exception as e:
+            raise Exception(
+                "Cannot get info about scan hosts. Maybe wrong parsed output"
+            )
+        if type(hosts) != type([]):
+            hosts = [hosts]
+        return hosts
+
+    def getIterablePossibleNmapPortsTxt(self, script, host):
+        ports = []
+        try:
+            host_section_pattern = re.compile(r'Nmap scan report for .* \(' + re.escape(host) + r'\)\n(.*?)(?=Nmap scan report for |\Z)', re.DOTALL)
+            host_section = host_section_pattern.findall(script)
+            if host_section:
+                host_section = host_section[0]
+                port_pattern = re.compile(r'(\d+)/(tcp|udp)\s+(open|filtered|closed|open\|filtered)\s+(\S+)')
+                ports = port_pattern.findall(host_section)
+                ports = [{"portid": port[0], "protocol": port[1], "state": port[2], "service": port[3]} for port in ports]
+        except Exception as e:
+            print(e)
+            pass
+        
+        if type(ports) != list:
             ports = [ports]
         return ports
 
@@ -314,6 +386,30 @@ class Scan:
                     {"address": ipv4, "ports": pvulnerables, "evidence": evidences}
                 )
             # notv.append({"address":host['address']['addr'],"ports":pnot_vulnerables})
+        return {"vulnerables": v, "no_vulnerables": notv}
+
+    def parseAsStandardOutput(self, data):
+        v = []
+        notv = []
+        hosts = self.getIterableNmapHostsTxt(data)
+        for host in hosts:
+            services = self.getIterablePossibleNmapPortsTxt(data, host)
+            for s in services:
+                if (s["state"] == "open"):
+                    scripts = self.getIterableNmapScriptResultsTxt(data, host, s)
+                    try:
+                        evidence = f"Servicio: {s['service']} en estado: {s['state']}"
+                        if scripts:
+                            evidence += f" - Script: {scripts[0]['script_name']} con resultado: {scripts[0]['state']}"
+                        v.append({"address": host, "port": s["portid"], "protocol": s["protocol"], "evidence": evidence})
+                    except Exception as e:
+                        self.errors.append(
+                            str(datetime.datetime.now())
+                            + " - Cant get evidence:  "
+                            + str(e)
+                        )
+                else:
+                    notv.append({"address": host, "port": s["portid"], "protocol": s["protocol"], "evidence": f"Servicio: {s['service']} en estado: {s['state']}"})
         return {"vulnerables": v, "no_vulnerables": notv}
 
     # def printKeyVals(self, data, indent=0):
@@ -494,7 +590,13 @@ class Scan:
             response = requests.post(url, data=h, headers=headers, verify=False)
             # print(str(response)+str(response.text))
 
+    def getDefaultProtocols(self):
+        return ['tcp']
+
     #### SUBLCLASS RESPONSIBILITY #####
+    def getIterableNmapScriptResultsTxt(self, script, host, service):
+        return []
+    
     def getCommand(self):
         pass
 
@@ -514,19 +616,14 @@ class Scan:
         pass
 
     ####### DB-USE #######
-    def save(self, db=None):
+    def save(self, db=db):
         if not self.is_saved:
             return None
-        if not db:
-            client = MongoClient(
-                dbconf["host"],
-                dbconf["port"],
-                username=dbconf["user"],
-                password=dbconf["password"],
-            )
-            db = client[dbconf["db"]]
         if not self._id:
             self._id = ObjectId()
+        print(db)
+        print()
+        print(self.__dict__)
         db.scans.update_one({"_id": self._id}, {"$set": self.__dict__}, upsert=True)
         # return db.insert_one(self.toDict()).inserted_id
         return self._id
@@ -547,6 +644,7 @@ class Scan:
             _outputs=self.outputs,
             _origin=self.origin,
             _ports=self.ports,
+            _protocols=self.protocols,
             errors=self.errors,
             output_files=self.output_files,
             finished_at=self.finished_at,
@@ -567,30 +665,22 @@ class Scan:
 
     @network.setter
     def network(self, n):
-        if not n:
-            raise Exception("Network cannot be empty")
-        aux = n.split("/")
-        if len(aux) > 2:
-            raise Exception("Network malformed")
-        if len(aux) == 2 and len(aux[1]) > 2:
-            raise Exception("Network malformed")
-        address = aux[0].split(".")
-        if len(address) > 4:
-            raise Exception("Network malformed")
-        for octet in address:
-            nums = octet.split(",")
-            for num in nums:
-                ranges = num.split("-")
-                if len(ranges) > 2:
-                    raise Exception("Network malformed")
-                for r in ranges:
-                    try:
-                        val = int(r)
-                        if val < 0 or val > 255:
-                            raise Exception("Network malformed")
-                    except:
-                        raise Exception("Network malformed")
-        self._network = n
+        # IP Check
+        try:
+            socket.inet_aton(n)
+            self._network = n
+            return
+        except socket.error:
+            pass
+
+        # Domain Check
+        if validators.domain(n):
+            self._network = n
+            return
+
+        # If none of the checks pass, raise an exception
+        raise ValueError("Network malformed")
+
 
     def setParams(self, p):
         if type(p) != dict:
@@ -625,6 +715,18 @@ class Scan:
         if p == []:
             p = self.getDefaultPorts()
         self._ports = p
+
+    @property
+    def protocols(self):
+        return self._protocols
+
+    @protocols.setter
+    def protocols(self, p):
+        if type(p) != list:
+            raise Exception("Protocols must be a list")
+        if p == []:
+            p = self.getDefaultProtocols()
+        self._protocols = p
 
     @property
     def origin(self):

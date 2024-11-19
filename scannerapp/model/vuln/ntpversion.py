@@ -8,9 +8,10 @@
 #
 
 from ..scan import Scan
+import re
 
-class DnsRecursive(Scan):
-    name = "dns-recursion"
+class NtpVersion(Scan):
+    name = "ntp-version"
 
     def __init__(self, *kwargs, **kwargs2):
         Scan.__init__(self, kwargs, kwargs2)
@@ -19,14 +20,13 @@ class DnsRecursive(Scan):
     def getName(cls):
         return cls.name
 
-    # dig +short test.openresolver.com TXT @1.2.3.4
+    # ntpq -c readvar IP
     def getCommand(self):
         command = []
-        command += ["dig"]
-        command += ["+short"]
-        command += ["test.openresolver.com"]
-        command += ["TXT"]
-        command += ["@"+self.network]
+        command += ["ntpq"]
+        command += ["-c"]
+        command += ["readvar"]
+        command += [self.network]
         return command
 
     def loadOutput(self, data):
@@ -35,20 +35,23 @@ class DnsRecursive(Scan):
     def parseAsDig(self, response):
         v = []
         notv = []
-        if ("open-resolver-detected" in response):
-            v.append({"address": self.network, "evidence": f"La ip {self.network} es un servidor DNS recursivo abierto"})
+        pattern = r'version="([^"]+)"'
+        match = re.search(pattern, response)
+        if (match):
+            version = match.group(1)
+            v.append({"address": self.network, "evidence": f"La ip {self.network} expone la version {version} de NTP"})
         else:
-            notv.append({"address": self.network, "evidence": f"La ip {self.network} NO es un servidor DNS recursivo abierto"})
+            notv.append({"address": self.network, "evidence": f"La ip {self.network} no expone la version de NTP"})
         return {"vulnerables": v, "no_vulnerables": notv}
 
     def prepareOutput(self, data):
         return self.parseAsDig(data)
 
     def getDefaultPorts(self):
-        return ["53"]
+        return ["123"]
 
     def getPortType(self):
         return "udp"
 
     def getTypeNGEN(self):
-        return "open_dns"
+        return "ntp_version"
