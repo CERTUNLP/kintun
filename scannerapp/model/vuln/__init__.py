@@ -26,6 +26,7 @@ __all__ = [
     "openportmap",
     "openportmap2",
     "openredis",
+    "postgresql",
     "poodle",
     "rdp",
     "smtpopenrelay",

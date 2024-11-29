@@ -18,6 +18,7 @@ RUN apt update && apt install -y \
     gnupg \
     netcat \
     redis-tools \
+    postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
 # Add MongoDB repository and install mongosh
