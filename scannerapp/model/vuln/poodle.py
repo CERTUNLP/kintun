@@ -11,7 +11,7 @@ from ..scan import Scan
 import re
 
 class Poodle(Scan):
-    name = "ssl-poodle"
+    name = "sslpoodle"
 
     def __init__(self, *kwargs, **kwargs2):
         Scan.__init__(self, kwargs, kwargs2)

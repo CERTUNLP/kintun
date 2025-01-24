@@ -11,7 +11,7 @@ from ..scan import Scan
 import re
 
 class NtpVersion(Scan):
-    name = "ntp-version"
+    name = "ntpversion"
 
     def __init__(self, *kwargs, **kwargs2):
         Scan.__init__(self, kwargs, kwargs2)

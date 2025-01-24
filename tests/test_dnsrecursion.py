@@ -9,7 +9,7 @@ headers = {
 
 
 data = {
-    "vuln" : "dns-recursion",
+    "vuln" : "dnsrecursive",
     "network" : '',
 	"protocol" : ["udp"],
     "ports" : ['53'],

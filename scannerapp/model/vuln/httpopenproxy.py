@@ -10,7 +10,7 @@
 from ..scan import Scan
 
 class HttpOpenProxy(Scan):
-    name = "http-open-proxy"
+    name = "httpopenproxy"
 
     def __init__(self, *kwargs, **kwargs2):
         Scan.__init__(self, kwargs, kwargs2)

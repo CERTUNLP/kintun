@@ -52,9 +52,6 @@ class OpenPortmap2(Scan):
     def getFormatedEvidence(self, data):
         return data
 
-    def addCommandPorts(self, command, ports):
-        return command + ["-p "+','.join(ports)]
-
     def prepareOutput(self, data):
         return self.parseAsCustom(data)
 

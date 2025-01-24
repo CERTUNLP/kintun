@@ -32,6 +32,10 @@ class General(Scan):
 
     def addCommandPorts(self, command, ports):
         return command + ["-p "+','.join(ports)]
+    
+    # Scan top 11 ports if no ports are specified
+    def getDefaultPorts(self):
+        return ["21,22,23,25,80,110,139,443,445,3306,3389"]
 
     def prepareOutput(self, data):
         return self.parseAsStandardOutput(data)

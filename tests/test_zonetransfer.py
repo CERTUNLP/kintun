@@ -9,7 +9,7 @@ headers = {
 
 
 data = {
-    "vuln" : "dns-zone-transfer",
+    "vuln" : "dnszonetransfer",
     "network" : '',
 	"protocol" : ["udp"],
     "ports" : ['53'],

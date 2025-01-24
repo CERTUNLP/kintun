@@ -69,6 +69,9 @@ class Mysql(Scan):
     def addCommandPorts(self, command, ports):
         return command + ["-p "+','.join(ports)]
 
+    def getDefaultPorts(self):
+        return ["3306"]
+
     def prepareOutput(self, data):
         return self.parseAsStandardOutput(data)
 

@@ -10,7 +10,7 @@
 from ..scan import Scan
 
 class SmtpOpenRelay(Scan):
-    name = "smtp-open-relay"
+    name = "smtpopenrelay"
 
     def __init__(self, *kwargs, **kwargs2):
         Scan.__init__(self, kwargs, kwargs2)

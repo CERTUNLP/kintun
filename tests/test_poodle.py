@@ -8,7 +8,7 @@ headers = {
 }
 
 data = {
-    "vuln" : "ssl-poodle",
+    "vuln" : "sslpoodle",
     "network" : '',
     "ports" : ['443'],
     "params" : {"feed":"test", "send-nmap-report":0},
