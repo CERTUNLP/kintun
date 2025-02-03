@@ -9,7 +9,7 @@ headers = {
 
 
 data = {
-    "vuln" : "ntp-version",
+    "vuln" : "ntpversion",
     "network" : '',
 	"protocol" : ['udp'],
     "ports" : ['123'],
@@ -19,7 +19,7 @@ data = {
 }
 
 data2 = {
-    "vuln" : "ntp-monlist",
+    "vuln" : "ntpmonlist",
     "network" : '',
 	"protocol" : ['udp'],
     "ports" : ['123'],

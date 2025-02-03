@@ -75,6 +75,132 @@ $ ./start_kintun.sh
 
 This script will guide you through the setup process and start the Kintun app accordingly, either with Docker or directly on your local machine.
 
+---
+How to use it
+-------
+
+```python
+import requests
+
+url = 'http://KINTUN_URL/api'
+headers = {
+    'accept': 'application/json',
+    'Content-Type': 'application/json',
+    'x-api-key': 'your_api_key'
+}
+
+data = {
+    "vuln" : "some_vuln",
+    "network" : 'Ip or domain (if web)',
+    "ports" : ['port1,port2,..,portX'],
+    "params" : {"feed":"your_feed", "send-nmap-report":0},
+    "protocol" : ["tcp_or_udp"],
+    "outputs" : [],
+    "report_to" : ""
+}
+r = requests.post(url+'/scan', headers=headers, json=data)
+```
+
+The type of vulns to choose from are defined in **scannerapp/model/vuln/\_\_init\_\_.py** (it is not a static list, it can be updated with new features)
+
+
+The response will look like this (example of a web scan to ip):
+```json
+{
+  "_id": "67a0d5f48a5b86d3567baec6",
+  "_network": "scanme.org",
+  "_origin": "127.0.0.1",
+  "_outputs": [],
+  "_ports": [
+    "80,443"
+  ],
+  "_protocols": [
+    "tcp"
+  ],
+  "errors": [],
+  "finished_at": "",
+  "output_files": [
+    "web-67a0d5f48a5b86d3567baec6.txt"
+  ],
+  "params": {
+    "feed": "test",
+    "send-nmap-report": 0
+  },
+  "result": {},
+  "started_at": "2025-02-03 14:43:00.943141",
+  "status": "started",
+  "uri": "http://KINTUN_URL/api/scan/67a0d5f48a5b86d3567baec6",
+  "vulnerability": "web"
+}
+```
+This response contains the uri and UUID of the scan, that can be used to query it and check for the status.
+When finished, it looks like this:
+
+```json
+{
+  "_id": "67a0d5f48a5b86d3567baec6",
+  "_network": "scanme.org",
+  "_origin": "127.0.0.1",
+  "_outputs": [],
+  "_ports": [
+    "80,443"
+  ],
+  "_protocols": [
+    "tcp"
+  ],
+  "errors": [],
+  "finished_at": "2025-02-03 14:43:01.633616",
+  "output_files": [
+    "web-67a0d5f48a5b86d3567baec6.txt"
+  ],
+  "params": {
+    "feed": "test",
+    "send-nmap-report": 0
+  },
+  "result": {
+    "no_vulnerables": [
+      {
+        "address": "45.33.32.156",
+        "evidence": "Servicio: https en estado: closed",
+        "port": "443",
+        "protocol": "tcp"
+      }
+    ],
+    "vulnerables": [
+      {
+        "address": "45.33.32.156",
+        "evidence": "Servicio: http en estado: open",
+        "port": "80",
+        "protocol": "tcp"
+      }
+    ]
+  },
+  "started_at": "2025-02-03 14:43:00.943141",
+  "status": "finished",
+  "uri": "http://KINTUN_URL/api/scan/67a0d5f48a5b86d3567baec6",
+  "vulnerability": "web"
+}
+```
+The result key has 2 lists: no_vulnerables and vulnerables. On these, we can see which address (ip or domain) associated with the port and protocol we scanned are open.
+
+#### Form UI
+In **http://KINTUN_URL/form** there is a form to submit a scan request. It includes the following fields:
+
+- **Target (IP or Domain):** A text input for the target IP address or domain name.
+- **Vulnerability Type:** A dropdown to select the type of vulnerability to scan for.
+- **Protocol:** A dropdown to select the protocol (TCP or UDP).
+- **Ports:** A text input for specifying ports as comma-separated values.
+
+The form also includes validation for the target and ports fields. If the input is invalid, an error message will be displayed.
+
+When the form is submitted, a POST request is sent to the `/api/scan` endpoint with the following data:
+
+- `vuln`: The selected vulnerability type.
+- `network`: The target IP or domain.
+- `protocol`: The selected protocol.
+- `ports`: The specified ports as an array.
+
+If the scan is submitted successfully, a link to the scan report will be displayed.
 
 License
 -------

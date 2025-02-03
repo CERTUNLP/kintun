@@ -7,13 +7,12 @@ headers = {
     'x-api-key': 'your_api_key'
 }
 
-
 data = {
-    "vuln" : "dnsrecursive",
+    "vuln" : "postgresql",
     "network" : '',
-	"protocol" : ["udp"],
-    "ports" : ['53'],
+    "ports" : ['5432'],
     "params" : {"feed":"test", "send-nmap-report":0},
+	"protocol" : ["tcp"],
     "outputs" : [],
     "report_to" : ""
 }
@@ -21,4 +20,3 @@ r = requests.post(url+'/scan', headers=headers, json=data)
 
 print(r.status_code)
 print(r.text)
-

@@ -10,8 +10,8 @@
 from ..scan import Scan
 import re
 
-class NtpVersion(Scan):
-    name = "ntpversion"
+class Postgresql(Scan):
+    name = "postgresql"
 
     def __init__(self, *kwargs, **kwargs2):
         Scan.__init__(self, kwargs, kwargs2)
@@ -20,38 +20,33 @@ class NtpVersion(Scan):
     def getName(cls):
         return cls.name
 
-    # ntpq -c readvar IP
+    # timeout 4 redis-cli -h IP -p PORT PING
     def getCommand(self):
         command = []
-        command += ["ntpq"]
-        command += ["-c"]
-        command += ["readvar"]
+        command += ["pg_isready"]
+        command += ["-h"]
         command += [self.network]
+        command += ["-p"]
+        command += [self.ports[0]]
         return command
 
     def loadOutput(self, data):
         return data
 
-    def parseAsDig(self, response):
+    def parseAsRedis(self, response):
         v = []
         notv = []
-        pattern = r'version="([^"]+)"'
-        match = re.search(pattern, response)
-        if (match):
-            version = match.group(1)
-            v.append({"address": self.network, "evidence": f"La ip {self.network} expone la version {version} de NTP"})
+        if "accepting" in response:
+            v.append({"address": self.network, "evidence": f"La ip {self.network} tiene un servidor Postgresql accesible en el puerto {self.ports[0]}"})
         else:
-            notv.append({"address": self.network, "evidence": f"La ip {self.network} no expone la version de NTP"})
+            notv.append({"address": self.network, "evidence": f"La ip {self.network} NO tiene un servidor Postgresql accesible en el puerto {self.ports[0]}"})
         return {"vulnerables": v, "no_vulnerables": notv}
 
     def prepareOutput(self, data):
-        return self.parseAsDig(data)
+        return self.parseAsRedis(data)
 
     def getDefaultPorts(self):
-        return ["123"]
+        return ["5432"]
 
     def getPortType(self):
-        return "udp"
-
-    def getTypeNGEN(self):
-        return "ntp_version"
+        return "tcp"

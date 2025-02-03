@@ -10,7 +10,7 @@
 from ..scan import Scan
 
 class DnsRecursive(Scan):
-    name = "dns-recursion"
+    name = "dnsrecursive"
 
     def __init__(self, *kwargs, **kwargs2):
         Scan.__init__(self, kwargs, kwargs2)

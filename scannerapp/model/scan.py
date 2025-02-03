@@ -307,8 +307,9 @@ class Scan:
     def getIterableNmapHostsTxt(self, script):
         hosts = []
         try:
-            host_pattern = re.compile(r'Nmap scan report for .* \((\d+\.\d+\.\d+\.\d+)\)')
-            hosts = host_pattern.findall(script)
+            host_pattern = re.compile(r'Nmap scan report for (?:[a-zA-Z0-9.-]+ \((\d+\.\d+\.\d+\.\d+)\)|(\d+\.\d+\.\d+\.\d+))')
+            matches = host_pattern.findall(script)
+            hosts = [match[0] if match[0] else match[1] for match in matches]
         except Exception as e:
             raise Exception(
                 "Cannot get info about scan hosts. Maybe wrong parsed output"
@@ -320,7 +321,7 @@ class Scan:
     def getIterablePossibleNmapPortsTxt(self, script, host):
         ports = []
         try:
-            host_section_pattern = re.compile(r'Nmap scan report for .* \(' + re.escape(host) + r'\)\n(.*?)(?=Nmap scan report for |\Z)', re.DOTALL)
+            host_section_pattern = re.compile(r'Nmap scan report for (?:[a-zA-Z0-9.-]+ \(' + re.escape(host) + r'\)|' + re.escape(host) + r')\n(.*?)(?=\nNmap scan report for |\Z)', re.DOTALL)
             host_section = host_section_pattern.findall(script)
             if host_section:
                 host_section = host_section[0]
@@ -395,7 +396,7 @@ class Scan:
         for host in hosts:
             services = self.getIterablePossibleNmapPortsTxt(data, host)
             for s in services:
-                if (s["state"] == "open"):
+                if (s["state"] == "open" or s["state"] == "open|filtered"):
                     scripts = self.getIterableNmapScriptResultsTxt(data, host, s)
                     try:
                         evidence = f"Servicio: {s['service']} en estado: {s['state']}"

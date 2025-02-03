@@ -10,7 +10,7 @@
 from ..scan import Scan
 
 class NtpMonlist(Scan):
-    name = "ntp-monlist"
+    name = "ntpmonlist"
 
     def __init__(self, *kwargs, **kwargs2):
         Scan.__init__(self, kwargs, kwargs2)

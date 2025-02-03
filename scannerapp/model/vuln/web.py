@@ -31,11 +31,10 @@ class Web(Scan):
         return command
 
     def addCommandPorts(self, command, ports):
-        if not ports:
-            self.ports = ["80", "443"]
-            return command + ["-p 80,443"]
-        else:
-            return command + ["-p "+','.join(ports)]
+        return command + ["-p "+','.join(ports)]
+
+    def getDefaultPorts(self):
+        return ["80,443"]
 
     def prepareOutput(self, data):
         return self.parseAsStandardOutput(data)

@@ -10,11 +10,13 @@
 
 from . import app
 from .model.vuln import *
+from .model.vuln import __all__ as vulns
 from .model.scan import Scan
 from config import logger
+import requests
 
 from functools import wraps
-from flask import jsonify, abort, make_response, request, url_for, redirect
+from flask import jsonify, abort, make_response, render_template, request, url_for, redirect
 from bson.objectid import ObjectId
 
 from config import db
@@ -208,6 +210,10 @@ def get_scans():
 def get_api_root():
     return jsonify({"name": "Kintun Scan API", "version": "0.1"})
 
+@app.route("/form", methods=["GET"])
+@require_api_key
+def get_form():
+    return render_template("form.html", vulns=vulns)
 
 @app.route("/api/report/<scan_id>", methods=["GET"])
 @require_api_key

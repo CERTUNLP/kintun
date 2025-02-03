@@ -12,7 +12,7 @@ import pprint
 
 # NO ESTA DISPONIBLE!
 class NetbiosSMB(Scan):
-    name = "netbios-smb"
+    name = "netbiossmb"
 
     def __init__(self, *kwargs, **kwargs2):
         Scan.__init__(self, kwargs, kwargs2)

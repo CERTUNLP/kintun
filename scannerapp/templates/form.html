@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title>Kintun</title>
+</head>
+<body>
+    <div class="container">
+        <h1>Vulnerability Scanner</h1>
+        <form id="scanForm">
+            <label for="target">Target (IP or Domain):</label>
+            <input type="text" id="target" name="target" required>
+            <span id="targetError" style="color: red;"></span>
+
+            <label for="vuln">Vulnerability Type:</label>
+            <select id="vuln" name="vuln" required>
+                {% for vuln in vulns %}
+                <option value="{{ vuln }}">{{ vuln }}</option>
+                {% endfor %}
+            </select>
+
+            <br>
+            <br>
+            <label for="protocol">Protocol:</label>
+            <select id="protocol" name="protocol" required>
+                <option value="tcp">TCP</option>
+                <option value="udp">UDP</option>
+            </select>
+
+            <br>
+            <br>
+
+            <label for="ports">Ports (comma-separated):</label>
+            <input type="text" id="ports" name="ports">
+            <span id="portsError" style="color: red;"></span>
+
+            <button type="submit">Scan</button>
+        </form>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function isValidIP(ip) {
+            const ipPattern = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+            return ipPattern.test(ip);
+        }
+
+        function isValidDomain(domain) {
+            const domainPattern = /^(?!:\/\/)([a-zA-Z0-9-_]+\.)*[a-zA-Z0-9][a-zA-Z0-9-_]+\.[a-zA-Z]{2,11}?$/;
+            return domainPattern.test(domain);
+        }
+
+        function isValidPorts(ports) {
+            const portsPattern = /^(\d+)(,\d+)*$/;
+            return portsPattern.test(ports) || ports === '';
+        }
+
+        document.getElementById('scanForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const targetInput = document.getElementById('target').value;
+            const protocolInput = document.getElementById('protocol').value;
+            const portsInput = document.getElementById('ports').value;
+
+            let isValid = true;
+
+            if (!isValidIP(targetInput) && !isValidDomain(targetInput)) {
+                document.getElementById('targetError').innerText = 'Invalid IP or domain.';
+                isValid = false;
+            } else {
+                document.getElementById('targetError').innerText = '';
+            }
+
+            if (!isValidPorts(portsInput)) {
+                document.getElementById('portsError').innerText = 'Invalid ports format. Use comma-separated values without spaces.';
+                isValid = false;
+            } else {
+                document.getElementById('portsError').innerText = '';
+            }
+
+            if (!isValid) {
+                return;
+            }
+
+            const url = '/api/scan';
+            const data = {
+                vuln: document.getElementById('vuln').value,
+                network: targetInput,
+                protocol: [protocolInput],
+                ports: portsInput ? portsInput.split(',') : [],
+                params: {"feed":"test", "send-nmap-report":0},  
+                outputs: [],  
+                report_to: ""  
+            };
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+                if (data.uri) {
+                    document.getElementById('result').innerHTML = `Scan submitted successfully! <a href="${data.uri}">View Report</a>`;
+                } else {
+                    document.getElementById('result').innerText = data.message || 'Scan submitted successfully!';
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                document.getElementById('result').innerText = 'Error submitting scan.';
+            });
+        });
+    </script>
+</body>
+</html>

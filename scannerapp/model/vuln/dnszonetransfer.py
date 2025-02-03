@@ -8,10 +8,9 @@
 #
 
 from ..scan import Scan
-## This script uses dns-zone-transfer from nmap shared scripts folder
 
 class DnsZoneTransfer(Scan):
-    name = "dns-zone-transfer"
+    name = "dnszonetransfer"
 
     def __init__(self, *kwargs, **kwargs2):
         Scan.__init__(self, kwargs, kwargs2)
