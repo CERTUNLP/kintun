@@ -103,7 +103,7 @@ def create_scan():
             ports=rj["ports"],
             params=rj["params"],
             outputs=rj["outputs"],
-            origin=request.remote_addr,
+            origin=[request.remote_addr, request.headers.get("X-Forwarded-For"), request.headers.get("X-Real-IP")],
             protocols=rj.get("protocol", ["tcp"]),
         )
         s.start()
@@ -189,8 +189,9 @@ def make_public_scan(scan):
     new_scan = {}
     for field in scan:
         if field == "_id":
+            scheme = request.scheme
             new_scan["uri"] = url_for(
-                "get_scan", scan_id=str(scan["_id"]), _external=True
+                "get_scan", scan_id=str(scan["_id"]), _external=True, _scheme=scheme
             )
             new_scan[field] = str(scan[field])
         else:

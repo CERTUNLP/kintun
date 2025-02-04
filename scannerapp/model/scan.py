@@ -107,8 +107,9 @@ class Scan:
         return protocols
 
     def start(self, preemptive=False):
+        origin = self.origin[1] or self.origin[0]
         logger.info(
-            "Iniciando Scan '" + self.getNameId() + "' creado por: " + self.origin
+            "Iniciando Scan '" + self.getNameId() + "' creado por: " + origin
         )
         thr = threading.Thread(target=self.__run, args=(), kwargs={})
         logger.info("Procesos activos: " + str(threading.active_count()))
