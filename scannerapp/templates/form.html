@@ -1,11 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <!-- Agregar FontAwesome para el ícono de copiar -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <title>Kintun</title>
 </head>
+
 <body>
     <div class="container">
         <h1>Vulnerability Scanner</h1>
@@ -39,6 +43,8 @@
             <button type="submit">Scan</button>
         </form>
         <div id="result"></div>
+        <!-- Nuevo contenedor para mostrar el JSON -->
+        <div id="jsonResult"></div>
     </div>
 
     <script>
@@ -57,7 +63,56 @@
             return portsPattern.test(ports) || ports === '';
         }
 
-        document.getElementById('scanForm').addEventListener('submit', function(event) {
+        // Función para copiar texto al portapapeles
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text)
+                .then(() => {
+                    const button = document.querySelector('button[onclick^="copyToClipboard"]');
+                    const hint = document.createElement('span');
+                    hint.textContent = 'Link copied!';
+                    hint.style.position = 'absolute';
+                    hint.style.backgroundColor = '#333';
+                    hint.style.color = '#fff';
+                    hint.style.padding = '5px';
+                    hint.style.borderRadius = '5px';
+                    hint.style.top = `${button.offsetTop - 30}px`;
+                    hint.style.left = `${button.offsetLeft}px`;
+                    hint.style.zIndex = '1000';
+                    document.body.appendChild(hint);
+                    setTimeout(() => document.body.removeChild(hint), 2000);
+                })
+                .catch((error) => console.error('Failed to copy:', error));
+        }
+
+        // Función para actualizar el JSON
+        function updateJson(uri) {
+            fetch(uri)
+                .then(response => response.json())
+                .then(data => {
+                    const jsonResult = document.getElementById('jsonResult');
+                    jsonResult.innerHTML = ''; // Limpiar el contenido anterior
+
+                    // Mostrar el estado actual
+                    const statusElement = document.createElement('p');
+                    statusElement.textContent = `Status: ${data.status || 'unknown'}`;
+                    jsonResult.appendChild(statusElement);
+
+                    // Mostrar el JSON
+                    const pre = document.createElement('pre');
+                    pre.textContent = JSON.stringify(data, null, 2);
+                    jsonResult.appendChild(pre);
+
+                    // Si el estado no es "finished" o "error", refrescar cada 2 segundos
+                    if (data.status && data.status !== "finished" && data.status !== "error") {
+                        setTimeout(() => updateJson(uri), 2000); // Refrescar cada 2 segundos
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error fetching updated JSON:', error);
+                });
+        }
+
+        document.getElementById('scanForm').addEventListener('submit', function (event) {
             event.preventDefault();
 
             const targetInput = document.getElementById('target').value;
@@ -90,9 +145,9 @@
                 network: targetInput,
                 protocol: [protocolInput],
                 ports: portsInput ? portsInput.split(',') : [],
-                params: {"feed":"test", "send-nmap-report":0},  
-                outputs: [],  
-                report_to: ""  
+                params: { "feed": "test", "send-nmap-report": 0 },
+                outputs: [],
+                report_to: ""
             };
 
             fetch(url, {
@@ -103,20 +158,30 @@
                 },
                 body: JSON.stringify(data)
             })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Success:', data);
-                if (data.uri) {
-                    document.getElementById('result').innerHTML = `Scan submitted successfully! <a href="${data.uri}">View Report</a>`;
-                } else {
-                    document.getElementById('result').innerText = data.message || 'Scan submitted successfully!';
-                }
-            })
-            .catch((error) => {
-                console.error('Error:', error);
-                document.getElementById('result').innerText = 'Error submitting scan.';
-            });
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Success:', data);
+                    if (data.uri) {
+                        const resultDiv = document.getElementById('result');
+                        resultDiv.innerHTML = `
+                        Scan submitted successfully! 
+                        <a href="${data.uri}" target="_blank">Open Full Report</a>
+                        <button onclick="copyToClipboard('${data.uri}')" title="">
+                            <i class="fas fa-copy"></i>Copy link
+                        </button>
+                    `;
+                        // Llamar a la función para actualizar el JSON
+                        updateJson(data.uri);
+                    } else {
+                        document.getElementById('result').innerText = data.message || 'Scan submitted successfully!';
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    document.getElementById('result').innerText = 'Error submitting scan.';
+                });
         });
     </script>
 </body>
+
 </html>
