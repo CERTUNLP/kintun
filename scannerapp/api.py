@@ -189,7 +189,7 @@ def make_public_scan(scan):
     new_scan = {}
     for field in scan:
         if field == "_id":
-            scheme = request.scheme
+            scheme = request.headers.get("X-Forwarded-Scheme") or request.headers.get("X-Scheme") or request.headers.get("X-Forwarded-Proto") or request.scheme
             new_scan["uri"] = url_for(
                 "get_scan", scan_id=str(scan["_id"]), _external=True, _scheme=scheme
             )
