@@ -35,10 +35,12 @@
 
             <br>
             <br>
-
-            <label for="ports">Ports (comma-separated):</label>
-            <input type="text" id="ports" name="ports">
-            <span id="portsError" style="color: red;"></span>
+            
+            <div id="portsContainer">
+                <label for="ports">Ports (comma-separated):</label>
+                <input type="text" id="ports" name="ports">
+                <span id="portsError" style="color: red;"></span>
+            </div>
 
             <button type="submit">Scan</button>
         </form>
@@ -48,6 +50,24 @@
     </div>
 
     <script>
+        const ONLY_DEFAULT_PORT = [
+            "blocklist",
+            "dnsrecursive",
+            "dnszonetransfer",
+            "heartbleed",
+            "httpgooglemalware",
+            "ldap",
+            "mongo",
+            "netbios",
+            "netbiossmb",
+            "ntpmonlist",
+            "ntpversion",
+            "openportmap2",
+            "openredis",
+            "postgresql",
+            "socksopenproxy"
+        ];
+
         function isValidIP(ip) {
             const ipPattern = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
             return ipPattern.test(ip);
@@ -62,6 +82,23 @@
             const portsPattern = /^(\d+)(,\d+)*$/;
             return portsPattern.test(ports) || ports === '';
         }
+
+        function handleVulnChange() {
+            const vulnSelect = document.getElementById('vuln');
+            console.log(vulnSelect.value);
+            const portsContainer = document.getElementById('portsContainer');
+            const portsInput = document.getElementById('ports');
+            const selectedVuln = vulnSelect.value;
+
+            if (ONLY_DEFAULT_PORT.includes(selectedVuln)) {
+                portsContainer.style.display = 'none';
+                portsInput.value = '';
+            } else {
+                portsContainer.style.display = 'block';
+            }
+        }
+
+        document.getElementById('vuln').addEventListener('change', handleVulnChange);
 
         // Función para copiar texto al portapapeles
         function copyToClipboard(text) {

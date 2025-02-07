@@ -39,7 +39,7 @@ def require_api_key(f):
 @app.route("/", methods=["GET"])
 @require_api_key
 def get_root():
-    return redirect(url_for("get_api_root"))
+    return redirect(url_for("get_form"))
 
 
 @app.route("/api/scan/<scan_id>", methods=["GET"])
