@@ -35,7 +35,7 @@
 
             <br>
             <br>
-            
+
             <div id="portsContainer">
                 <label for="ports">Ports (comma-separated):</label>
                 <input type="text" id="ports" name="ports">
@@ -99,6 +99,7 @@
         }
 
         document.getElementById('vuln').addEventListener('change', handleVulnChange);
+        document.addEventListener('DOMContentLoaded', handleVulnChange);
 
         // Función para copiar texto al portapapeles
         function copyToClipboard(text) {
