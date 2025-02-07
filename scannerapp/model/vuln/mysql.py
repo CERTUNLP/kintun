@@ -7,6 +7,7 @@
 # with this source code in the file LICENSE.
 #
 
+import datetime
 from ..scan import Scan
 import re
 
@@ -31,40 +32,52 @@ class Mysql(Scan):
         command += [self.network]
         command += ["-oN="+self.getOutputNmapTxtFilePathName()]
         return command
+    
 
-    def getIterableNmapScriptResultsTxt(self, script, host, service):
-        script_results = []
+    def getIterablePossibleNmapPortsTxt(self, script, host):
+        ports = []
         try:
-            host_section_pattern = re.compile(
-                r'Nmap scan report for .* \(' + re.escape(host) + r'\)\n(.*?)(?=Nmap scan report for |\Z)', 
-                re.DOTALL
-            )
+            host_section_pattern = re.compile(r'Nmap scan report for (?:[a-zA-Z0-9.-]+ \(' + re.escape(host) + r'\)|' + re.escape(host) + r')\n(.*?)(?=\nNmap scan report for |\Z)', re.DOTALL)
             host_section = host_section_pattern.findall(script)
-            if not host_section:
-                return script_results
-            
-            host_section = host_section[0]
-
-            port_section_pattern = re.compile(
-                re.escape(service["portid"] + '/' + service["protocol"]) + r'.*?\n(\|\s+\S+.*?)\n\n', 
-                re.DOTALL
-            )
-            port_section_matches = port_section_pattern.findall(host_section)
-            
-            for port_section in port_section_matches:
-                if "mysql-info" in port_section:
-                    version_match = re.search(r'Version:\s+([\d.]+)', port_section)
-                    if version_match:
-                        mysql_version = version_match.group(1).strip()
-                        script_results.append({
-                            "script_name": "mysql-info",
-                            "state": mysql_version
-                        })
-
+            if host_section:
+                host_section = host_section[0]
+                port_pattern = re.compile(
+                    r'(\d+)/(tcp|udp)\s+(open|filtered|closed|open\|filtered)\s+(\S+)(?:\n\| mysql-info:.*?Version:\s+([^\n]+))?', re.DOTALL)
+                ports = port_pattern.findall(host_section)
+                ports = [{"portid": port[0], "protocol": port[1], "state": port[2], "service": port[3], "version": port[4] if len(port) > 4 else None} for port in ports]
         except Exception as e:
-            raise Exception("Cannot get script results. Maybe wrong parsed output: " + str(e))
+            print(e)
+            pass
+        
+        if type(ports) != list:
+            ports = [ports]
+        return ports
+    
 
-        return script_results
+    def parseAsMySql(self, data):
+        v = []
+        notv = []
+        hosts = self.getIterableNmapHostsTxt(data)
+        for host in hosts:
+            services = self.getIterablePossibleNmapPortsTxt(data, host)
+            for s in services:
+                print(f"Service: {s}")
+                if s["state"] == "open" and s["version"]:
+                    try:
+                        evidence = f"Servicio: {s['service']} en estado: {s['state']} - Version: {s['version']}"
+                        v.append({"address": host, "port": s["portid"], "protocol": s["protocol"], "evidence": evidence})
+                    except Exception as e:
+                        self.errors.append(
+                            str(datetime.datetime.now())
+                            + " - Cant get evidence:  "
+                            + str(e)
+                        )
+                else:
+                    evidence = f"Servicio: {s['service']} en estado: {s['state']}"
+                    if not s["version"]:
+                        evidence += " - No version info"
+                    notv.append({"address": host, "port": s["portid"], "protocol": s["protocol"], "evidence": evidence})
+        return {"vulnerables": v, "no_vulnerables": notv}
 
     def addCommandPorts(self, command, ports):
         return command + ["-p "+','.join(ports)]
@@ -73,7 +86,7 @@ class Mysql(Scan):
         return ["3306"]
 
     def prepareOutput(self, data):
-        return self.parseAsStandardOutput(data)
+        return self.parseAsMySql(data)
 
     def loadOutput(self, output):
         return self.loadOutputTxt(output)

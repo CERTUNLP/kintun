@@ -33,7 +33,7 @@ class Postgresql(Scan):
     def loadOutput(self, data):
         return data
 
-    def parseAsRedis(self, response):
+    def parseAsPostgres(self, response):
         v = []
         notv = []
         if "accepting" in response:
@@ -43,7 +43,7 @@ class Postgresql(Scan):
         return {"vulnerables": v, "no_vulnerables": notv}
 
     def prepareOutput(self, data):
-        return self.parseAsRedis(data)
+        return self.parseAsPostgres(data)
 
     def getDefaultPorts(self):
         return ["5432"]
