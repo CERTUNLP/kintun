@@ -119,6 +119,7 @@ The response will look like this (example of a web scan to ip):
   ],
   "errors": [],
   "finished_at": "",
+  "is_vuln": null,
   "output_files": [
     "web-67a0d5f48a5b86d3567baec6.txt"
   ],
@@ -150,6 +151,7 @@ When finished, it looks like this:
   ],
   "errors": [],
   "finished_at": "2025-02-03 14:43:01.633616",
+  "is_vuln": true,
   "output_files": [
     "web-67a0d5f48a5b86d3567baec6.txt"
   ],
@@ -181,7 +183,9 @@ When finished, it looks like this:
   "vulnerability": "web"
 }
 ```
-The result key has 2 lists: no_vulnerables and vulnerables. On these, we can see which address (ip or domain) associated with the port and protocol we scanned are open.
+The `result` key contains two lists: `no_vulnerables` and `vulnerables`. These lists show which addresses (IP or domain) with the scanned ports and protocols are open.
+
+The `is_vuln` key is a boolean indicating if any vulnerabilities were found. If the `vulnerables` list is not empty, `is_vuln` will be `true`, meaning at least one port or service on the IP address has a vulnerability.
 
 #### Form UI
 In **http://KINTUN_URL/form** there is a form to submit a scan request. It includes the following fields:

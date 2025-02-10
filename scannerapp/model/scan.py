@@ -53,6 +53,7 @@ class Scan:
         self.started_at = ""
         self.finished_at = ""
         self.result = {}
+        self.is_vuln = None
         self.errors = []
         self.output_files = []
         self.vulnerability = self.__class__.name
@@ -225,6 +226,7 @@ class Scan:
             try:
                 self.result = Result().load_data(self.prepareOutput(data))
                 self.finished_at = str(datetime.datetime.now())
+                self.is_vuln = self.result["vulnerables"] != []
             except Exception as e:
                 self.errors.append(
                     str(datetime.datetime.now())
@@ -652,6 +654,7 @@ class Scan:
             finished_at=self.finished_at,
             params=self.params,
             result=self.result,
+            is_vuln=self.is_vuln,
             started_at=self.started_at,
             status=self.status,
             vulnerability=self.vulnerability,
