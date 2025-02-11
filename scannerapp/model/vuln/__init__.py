@@ -22,6 +22,7 @@ __all__ = [
     "netbiossmb",
     "ntpmonlist",
     "ntpversion",
+    "openmqtt",
     "openport",
     "openportmap",
     "openportmap2",
