@@ -8,6 +8,7 @@
 #
 
 __all__ = [
+    "amqp",
     "blocklist",
     "dnsrecursive",
     "dnszonetransfer",
@@ -22,6 +23,7 @@ __all__ = [
     "netbiossmb",
     "ntpmonlist",
     "ntpversion",
+    "openmqtt",
     "openport",
     "openportmap",
     "openportmap2",
