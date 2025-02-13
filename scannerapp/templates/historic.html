@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>Historic Scans</title>
+</head>
+
+<body>
+    <div class="container mt-5">
+        <h1>Historic Scans</h1>
+        <div class="form-group">
+            <input type="text" id="searchInput" class="form-control" placeholder="Search by network, vuln, or result">
+        </div>
+        <div class="mb-3">
+            <span id="totalCount" class="badge badge-info"></span>
+        </div>
+        <table class="table table-striped table-hover">
+            <thead class="thead-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Date</th>
+                    <th>Network</th>
+                    <th>Vuln</th>
+                    <th>Ports</th>
+                    <th>Result</th>
+                    <th>URL</th>
+                </tr>
+            </thead>
+            <tbody id="scansTableBody">
+                <!-- Populated with JavaScript -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            fetch('/api/scans')
+                .then(response => response.json())
+                .then(data => {
+                    const scansTableBody = document.getElementById('scansTableBody');
+                    const totalCount = document.getElementById('totalCount');
+                    totalCount.textContent = `Total Scans: ${data.count}`;
+                    data.scans.forEach(scan => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${scan._id}</td>
+                            <td>${new Date(scan.started_at).toLocaleString()}</td>
+                            <td>${scan._network}</td>
+                            <td>${scan.vulnerability}</td>
+                            <td>${scan._ports.join(', ')}</td>
+                            <td>${scan.is_vuln === null ? 'In progress' : (scan.is_vuln ? 'Vulnerable' : 'Not Vulnerable')}</td>
+                            <td><a href="${scan.uri}" class="btn btn-primary" target="_blank"><i class="fas fa-arrow-right"></i></a></td>
+                        `;
+                        scansTableBody.appendChild(row);
+                    });
+                });
+
+            document.getElementById('searchInput').addEventListener('input', function () {
+                const filter = this.value.toLowerCase();
+                const rows = document.querySelectorAll('#scansTableBody tr');
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    const match = Array.from(cells).some(cell => cell.textContent.toLowerCase().includes(filter));
+                    row.style.display = match ? '' : 'none';
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>

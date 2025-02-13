@@ -13,6 +13,9 @@
 <body>
     <div class="container">
         <h1>Vulnerability Scanner</h1>
+        <p class="lead">
+            Before starting a new scan, you can check the <a href="{{ url_for('get_historic_page') }}" class="btn btn-info">Historic Scans</a> to review previous results.
+        </p>
         <form id="scanForm">
             <label for="target">Target (IP or Domain):</label>
             <input type="text" id="target" name="target" required>
