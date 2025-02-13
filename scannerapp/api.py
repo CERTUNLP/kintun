@@ -13,7 +13,6 @@ from .model.vuln import *
 from .model.vuln import __all__ as vulns
 from .model.scan import Scan
 from config import logger
-import requests
 
 from functools import wraps
 from flask import jsonify, abort, make_response, render_template, request, url_for, redirect
@@ -202,7 +201,7 @@ def make_public_scan(scan):
 @app.route("/api/scans", methods=["GET"])
 @require_api_key
 def get_scans():
-    alls = [make_public_scan(scan) for scan in db.scans.find()]
+    alls = [make_public_scan(scan) for scan in db.scans.find().sort("started_at", -1)]
     return jsonify({"scans": alls, "count": len(alls)})
 
 
@@ -234,3 +233,9 @@ def print_something():
         abort(400, "Parametros incorrectos, no hay json")
     print(request.json)
     return jsonify(request.json), 201
+
+
+@app.route("/historic", methods=["GET"])
+@require_api_key
+def get_historic_page():
+    return render_template("historic.html")

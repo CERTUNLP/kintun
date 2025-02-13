@@ -371,6 +371,7 @@ class Scan:
             evidences = []
             evidence = "None"
             for port in services:
+                print(f"Port: {port}")
                 if self.isVulnerable(port, host):
                     pvulnerables.append(port["portid"])
                     try:
