@@ -201,8 +201,31 @@ def make_public_scan(scan):
 @app.route("/api/scans", methods=["GET"])
 @require_api_key
 def get_scans():
-    alls = [make_public_scan(scan) for scan in db.scans.find().sort("started_at", -1)]
-    return jsonify({"scans": alls, "count": len(alls)})
+    page = int(request.args.get('page', 1))
+    limit = int(request.args.get('limit', 15))
+    filter_text = request.args.get('filter', '').lower()
+    skips = limit * (page - 1)
+    
+    query = {}
+    if filter_text:
+        query = {
+            "$or": [
+                {"_id": {"$regex": filter_text, "$options": "i"}},
+                {"_network": {"$regex": filter_text, "$options": "i"}},
+                {"vulnerability": {"$regex": filter_text, "$options": "i"}},
+                {"is_vuln": {"$regex": filter_text, "$options": "i"}}
+            ]
+        }
+    
+    total_scans = db.scans.count_documents(query)
+    scans = db.scans.find(query).sort("started_at", -1).skip(skips).limit(limit)
+    
+    return jsonify({
+        "scans": [make_public_scan(scan) for scan in scans],
+        "count": total_scans,
+        "page": page,
+        "limit": limit
+    })
 
 
 @app.route("/api/", methods=["GET"])
