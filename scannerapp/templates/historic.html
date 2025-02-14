@@ -34,40 +34,83 @@
                 <!-- Populated with JavaScript -->
             </tbody>
         </table>
+        <nav>
+            <ul class="pagination justify-content-center" id="pagination">
+                <!-- Populated with JavaScript -->
+            </ul>
+        </nav>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            fetch('/api/scans')
-                .then(response => response.json())
-                .then(data => {
-                    const scansTableBody = document.getElementById('scansTableBody');
-                    const totalCount = document.getElementById('totalCount');
-                    totalCount.textContent = `Total Scans: ${data.count}`;
-                    data.scans.forEach(scan => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td>${scan._id}</td>
-                            <td>${new Date(scan.started_at).toLocaleString()}</td>
-                            <td>${scan._network}</td>
-                            <td>${scan.vulnerability}</td>
-                            <td>${scan._ports.join(', ')}</td>
-                            <td>${scan.is_vuln === null ? 'In progress' : (scan.is_vuln ? 'Vulnerable' : 'Not Vulnerable')}</td>
-                            <td><a href="${scan.uri}" class="btn btn-primary" target="_blank"><i class="fas fa-arrow-right"></i></a></td>
-                        `;
-                        scansTableBody.appendChild(row);
+            const rowsPerPage = 15;
+            let currentPage = 1;
+            let totalScans = 0;
+            let filterText = '';
+            let debounceTimeout;
+
+            function fetchScans(page = 1) {
+                fetch(`/api/scans?page=${page}&limit=${rowsPerPage}&filter=${filterText}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        totalScans = data.count;
+                        currentPage = data.page;
+                        renderTable(data.scans);
+                        renderPagination();
+                        document.getElementById('totalCount').textContent = `Total Scans: ${totalScans}`;
                     });
+            }
+
+            function renderTable(scans) {
+                const scansTableBody = document.getElementById('scansTableBody');
+                scansTableBody.innerHTML = '';
+                scans.forEach(scan => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${scan._id}</td>
+                        <td>${new Date(scan.started_at).toLocaleString()}</td>
+                        <td>${scan._network}</td>
+                        <td>${scan.vulnerability}</td>
+                        <td>${scan._ports.join(', ')}</td>
+                        <td>${scan.is_vuln === null ? 'In progress' : (scan.is_vuln ? 'Vulnerable' : 'Not Vulnerable')}</td>
+                        <td><a href="${scan.uri}" class="btn btn-primary" target="_blank"><i class="fas fa-arrow-right"></i></a></td>
+                    `;
+                    scansTableBody.appendChild(row);
                 });
+            }
+
+            function renderPagination() {
+                const pagination = document.getElementById('pagination');
+                pagination.innerHTML = '';
+                const pageCount = Math.ceil(totalScans / rowsPerPage);
+
+                for (let i = 1; i <= pageCount; i++) {
+                    const pageItem = document.createElement('li');
+                    pageItem.className = `page-item ${i === currentPage ? 'active' : ''}`;
+                    pageItem.innerHTML = `<a class="page-link" href="#">${i}</a>`;
+                    pageItem.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        fetchScans(i);
+                    });
+                    pagination.appendChild(pageItem);
+                }
+            }
+
+            function debounce(func, wait) {
+                return function(...args) {
+                    clearTimeout(debounceTimeout);
+                    debounceTimeout = setTimeout(() => func.apply(this, args), wait);
+                };
+            }
+
+            const debouncedFetchScans = debounce(() => fetchScans(1), 350);
 
             document.getElementById('searchInput').addEventListener('input', function () {
-                const filter = this.value.toLowerCase();
-                const rows = document.querySelectorAll('#scansTableBody tr');
-                rows.forEach(row => {
-                    const cells = row.querySelectorAll('td');
-                    const match = Array.from(cells).some(cell => cell.textContent.toLowerCase().includes(filter));
-                    row.style.display = match ? '' : 'none';
-                });
+                filterText = this.value.toLowerCase();
+                debouncedFetchScans();
             });
+
+            fetchScans();
         });
     </script>
 </body>
