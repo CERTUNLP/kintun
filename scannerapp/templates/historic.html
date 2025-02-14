@@ -71,7 +71,7 @@
                         <td>${new Date(scan.started_at).toLocaleString()}</td>
                         <td>${scan._network}</td>
                         <td>${scan.vulnerability}</td>
-                        <td>${scan._ports.join(', ')}</td>
+                        <td>${scan._ports ? scan._ports.join(', ') : 'N/A'}</td>
                         <td>${scan.is_vuln === null ? 'In progress' : (scan.is_vuln ? 'Vulnerable' : 'Not Vulnerable')}</td>
                         <td><a href="${scan.uri}" class="btn btn-primary" target="_blank"><i class="fas fa-arrow-right"></i></a></td>
                     `;
