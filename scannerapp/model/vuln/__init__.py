@@ -37,5 +37,6 @@ __all__ = [
     "socksopenproxy",
     "stun",
     "telnet",
+    "ubiquiti",
     "web",
 ]
