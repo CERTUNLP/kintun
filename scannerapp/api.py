@@ -45,15 +45,13 @@ def verify_password(username, password):
 
 def require_auth(f):
     @wraps(f)
-    @auth.login_required
     def decorated_function(*args, **kwargs):
         api_key = request.headers.get('x-api-key')
         if api_key and api_key == VALID_API_KEY:
             return f(*args, **kwargs)
-        elif auth.current_user():
-            return f(*args, **kwargs)
-        else:
-            return make_response(jsonify({"error": "Unauthorized", "error_type": "401"}), 401, {'WWW-Authenticate': 'Basic realm="Login Required"'})
+        elif request.authorization:
+            return auth.login_required(f)(*args, **kwargs)
+        return make_response(jsonify({"error": "Unauthorized", "error_type": "401"}), 401, {'WWW-Authenticate': 'Basic realm="Login Required"'})
     return decorated_function
 
 
