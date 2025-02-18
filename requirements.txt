@@ -26,3 +26,5 @@ requests
 gnupg
 python-dotenv
 validators
+stamina
+flask_httpauth

@@ -10,6 +10,7 @@
 from ..scan import Scan
 from dotenv import load_dotenv
 import requests, datetime, sys, os, json
+from stamina import retry
 
 load_dotenv()
 mxtoolbox_api_key = os.getenv("MXTOOLBOX_API_KEY")
@@ -30,6 +31,7 @@ class Blocklist(Scan):
 
     # Command as a request instead of scanning
     # MXTOOLBOX  api/v1/Lookup/{Command}/?argument={argument}
+    @retry(on=Exception, attempts=3, wait_initial=2)
     def execute(self):
         try:
             header = {"Authorization": mxtoolbox_api_key}
@@ -38,7 +40,7 @@ class Blocklist(Scan):
                 raise Exception(f"MXToolbox API is not working correctly. Response was: {r.status_code}. Text: {r.text}")
             return bytes(r.text, "utf-8"), b""
         except Exception as e:
-            return b"", bytes(str(datetime.datetime.now()) + "Error in connection with MXToolbox API" + str(sys.exc_info()[1]), "utf-8")
+            return b"", bytes(str(datetime.datetime.now()) + " - Error in connection with MXToolbox API - " + str(sys.exc_info()[1]), "utf-8")
 
     def loadOutput(self, data):
         return data
