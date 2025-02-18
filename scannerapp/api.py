@@ -16,7 +16,9 @@ from config import logger
 
 from functools import wraps
 from flask import jsonify, abort, make_response, render_template, request, url_for, redirect
-from bson.objectid import ObjectId
+
+from flask_httpauth import HTTPBasicAuth
+from werkzeug.security import generate_password_hash, check_password_hash
 
 from config import db
 import os
@@ -25,24 +27,44 @@ from dotenv import load_dotenv
 load_dotenv()
 VALID_API_KEY = os.getenv("KINTUN_API_KEY","")
 
-def require_api_key(f):
+USER_CREDENTIALS = {}
+for key, value in os.environ.items():
+    if key.startswith("KINTUN_USER_"):
+        username, password = value.split(":")
+        USER_CREDENTIALS[username] = password
+
+auth = HTTPBasicAuth()
+
+users = {username: generate_password_hash(password) for username, password in USER_CREDENTIALS.items()}
+
+@auth.verify_password
+def verify_password(username, password):
+    if username in users and check_password_hash(users.get(username), password):
+        return username
+    return None
+
+def require_auth(f):
     @wraps(f)
+    @auth.login_required
     def decorated_function(*args, **kwargs):
         api_key = request.headers.get('x-api-key')
         if api_key and api_key == VALID_API_KEY:
             return f(*args, **kwargs)
+        elif auth.current_user():
+            return f(*args, **kwargs)
         else:
-            return jsonify({"error": "Unauthorized", "error_type": "401"}), 401
+            return make_response(jsonify({"error": "Unauthorized", "error_type": "401"}), 401, {'WWW-Authenticate': 'Basic realm="Login Required"'})
     return decorated_function
 
+
 @app.route("/", methods=["GET"])
-@require_api_key
+@require_auth
 def get_root():
     return redirect(url_for("get_form"))
 
 
 @app.route("/api/scan/<scan_id>", methods=["GET"])
-@require_api_key
+@require_auth
 def get_scan(scan_id):
     try: 
         x = Scan.get(scan_id, db)
@@ -73,7 +95,7 @@ def bad_request(error):
 
 
 @app.route("/api/scan", methods=["POST"])
-@require_api_key
+@require_auth
 def create_scan():
     """
     network:
@@ -114,7 +136,7 @@ def create_scan():
 
 
 @app.route("/api/scan_now", methods=["POST"])
-@require_api_key
+@require_auth
 def create_scan_now():
     """
     network:
@@ -153,7 +175,7 @@ def create_scan_now():
 
 
 @app.route("/api/scans/<scan_id>", methods=["PUT"])
-@require_api_key
+@require_auth
 def update_scan(scan_id):
     # TODO: Reimplement
     s = [scan for scan in [] if scan["id"] == scan_id]
@@ -175,7 +197,7 @@ def update_scan(scan_id):
 
 
 @app.route("/api/scans/<scan_id>", methods=["DELETE"])
-@require_api_key
+@require_auth
 def delete_scan(scan_id):
     # TODO: Reimplement
     s = [scan for scan in [] if scan["id"] == scan_id]
@@ -199,7 +221,7 @@ def make_public_scan(scan):
 
 
 @app.route("/api/scans", methods=["GET"])
-@require_api_key
+@require_auth
 def get_scans():
     page = int(request.args.get('page', 1))
     limit = int(request.args.get('limit', 15))
@@ -229,24 +251,24 @@ def get_scans():
 
 
 @app.route("/api/", methods=["GET"])
-@require_api_key
+@require_auth
 def get_api_root():
     return jsonify({"name": "Kintun Scan API", "version": "0.1"})
 
 @app.route("/form", methods=["GET"])
-@require_api_key
+@require_auth
 def get_form():
     return render_template("form.html", vulns=vulns)
 
 @app.route("/api/report/<scan_id>", methods=["GET"])
-@require_api_key
+@require_auth
 def report(scan_id):
     s = db.scans.find()
     return jsonify({"scans": [make_public_scan(scan) for scan in s]})
 
 
 @app.route("/api/print", methods=["POST", "GET"])
-@require_api_key
+@require_auth
 def print_something():
     print("Imprimiendo request recibida: ")
     print(request.args)
@@ -259,6 +281,6 @@ def print_something():
 
 
 @app.route("/historic", methods=["GET"])
-@require_api_key
+@require_auth
 def get_historic_page():
     return render_template("historic.html")

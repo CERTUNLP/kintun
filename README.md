@@ -206,6 +206,39 @@ When the form is submitted, a POST request is sent to the `/api/scan` endpoint w
 
 If the scan is submitted successfully, a link to the scan report will be displayed.
 
+### Authentication Methods
+
+Kintun supports two methods of authentication: API Key and Basic Authentication.
+
+#### API Key Authentication
+
+To use API Key authentication, include the API key in the request headers. The API key should be set in the `.env` file as `KINTUN_API_KEY`.
+
+**Example Request:**
+```bash
+curl -H "x-api-key: your_api_key" http://kintun_url/api/scan/xxx
+```
+
+#### Basic Authentication
+
+To use Basic Authentication, include the username and password in the request headers. User credentials should be set in the .env file in the format `KINTUN_USER_<number>=username:password`
+
+**Example Request:**
+```bash
+curl -u username:password http://kintun_url/api/scan/xxx
+```
+
+#### Environment Variables
+
+```
+MXTOOLBOX_API_KEY=your_api_key
+KINTUN_API_KEY=your_api_key
+KINTUN_USER_1=username:password
+# Add more users as needed
+```
+
+Note: When accessing the API via a browser, you will be prompted to enter the username and password for Basic Authentication.
+
 License
 -------
 
