@@ -33,14 +33,9 @@ class Blocklist(Scan):
     # MXTOOLBOX  api/v1/Lookup/{Command}/?argument={argument}
     @retry(on=Exception, attempts=3, wait_initial=2)
     def execute(self):
-        try:
-            header = {"Authorization": mxtoolbox_api_key}
-            r = requests.get(f"https://api.mxtoolbox.com/api/v1/Lookup/blacklist/?argument={self.network}", headers=header)
-            if r.status_code != 200:
-                raise Exception(f"MXToolbox API is not working correctly. Response was: {r.status_code}. Text: {r.text}")
-            return bytes(r.text, "utf-8"), b""
-        except Exception as e:
-            return b"", bytes(str(datetime.datetime.now()) + " - Error in connection with MXToolbox API - " + str(sys.exc_info()[1]), "utf-8")
+        header = {"Authorization": mxtoolbox_api_key}
+        r = requests.get(f"https://api.mxtoolbox.com/api/v1/Lookup/blacklist/?argument={self.network}", headers=header)
+        return bytes(r.text, "utf-8"), b""
 
     def loadOutput(self, data):
         return data
