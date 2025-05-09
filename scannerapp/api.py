@@ -282,3 +282,11 @@ def print_something():
 @require_auth
 def get_historic_page():
     return render_template("historic.html")
+
+@app.route("/api/vulns", methods=["GET"])
+@require_auth
+def get_vuln():
+    """
+    Returns a list of all available vulnerabilities.
+    """
+    return jsonify(vulns)
