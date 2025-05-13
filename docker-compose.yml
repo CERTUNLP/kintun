@@ -17,11 +17,11 @@ services:
         privileged: true
 
     mongo:
-        image: mongodb/mongodb-community-server:7.0.1-ubuntu2204
+        image: mongo
         restart: always
         environment:
-            MONGODB_INITDB_ROOT_USERNAME: root
-            MONGODB_INITDB_ROOT_PASSWORD: example
+            MONGO_INITDB_ROOT_USERNAME: root
+            MONGO_INITDB_ROOT_PASSWORD: example
         ports:
             - 27017:27017
         networks:
