@@ -20,8 +20,8 @@ services:
         image: mongodb/mongodb-community-server:7.0.1-ubuntu2204
         restart: always
         environment:
-            MONGO_INITDB_ROOT_USERNAME: root
-            MONGO_INITDB_ROOT_PASSWORD: example
+            MONGODB_INITDB_ROOT_USERNAME: root
+            MONGODB_INITDB_ROOT_PASSWORD: example
         ports:
             - 27017:27017
         networks:
