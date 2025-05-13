@@ -45,7 +45,7 @@ if [ "$USE_DOCKER" = "y" ]; then
   fi
 
   echo "Starting Kintun with Docker..."
-  docker compose up
+  docker compose up --build
 else
   echo "Starting Kintun locally with Python..."
 
@@ -64,12 +64,32 @@ else
     exit 1
   fi
 
+  if [ "$MONGO_HOST" = "localhost" ] || [ "$MONGO_HOST" = "127.0.0.1" ]; then
+    echo "Checking if MongoDB is running locally on $MONGO_HOST:$MONGO_PORT..."
+    if ! nc -z "$MONGO_HOST" "$MONGO_PORT"; then
+      echo "Error: MongoDB is not running on $MONGO_HOST:$MONGO_PORT."
+      echo "Please start MongoDB locally or update the host and port in $CONFIG_FILE."
+      exit 1
+    fi
+  else
+    echo "MongoDB is configured to run on $MONGO_HOST:$MONGO_PORT and NOT on localhost! Ensure this is correct."
+  fi
+
+  echo "Setting up Python virtual environment..."
+  if [ ! -d "venv" ]; then
+      python3 -m venv venv
+  fi
+
+  source venv/bin/activate
+
   echo "Installing required Python packages..."
-  pip3 install -r requirements.txt
+  pip3 install --no-cache-dir -r requirements.txt
 
   echo "Installing system dependencies..."
   sudo apt update
-  sudo apt install -y shelldap expect rpcbind smbclient wget dnsutils ntp build-essential libssl-dev gnupg redis-tools nmap netcat-openbsd
+  sudo apt install -y shelldap expect rpcbind smbclient dnsutils ntp netcat-traditional redis-tools postgresql-client curl nmap gnupg
 
   python3 app.py
+  deactivate
+
 fi
